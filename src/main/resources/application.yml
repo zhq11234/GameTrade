@@ -1,0 +1,28 @@
+spring:
+  application:
+    name: GameTrade
+  
+  # ========== 数据库配置 ==========
+  datasource:
+    url: jdbc:sqlserver://localhost:1433;databaseName=GameTrade;encrypt=true;trustServerCertificate=true
+    username: sa
+    password: 123456
+    driver-class-name: com.microsoft.sqlserver.jdbc.SQLServerDriver
+  
+  # ========== JPA/Hibernate 配置 ==========
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.SQLServerDialect
+
+# ========== 其他配置 ==========
+server:
+  port: 8080
+
+logging:
+  level:
+    com.database.gametrade: DEBUG
