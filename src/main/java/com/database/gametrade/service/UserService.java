@@ -3,6 +3,7 @@ package com.database.gametrade.service;
 import com.database.gametrade.entity.User;
 import com.database.gametrade.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.Optional;
@@ -13,6 +14,8 @@ public class UserService {
     @Autowired
     private UserRepository userRepository;
     
+    private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+    
     /**
      * 用户登录验证
      */
@@ -20,8 +23,8 @@ public class UserService {
         Optional<User> userOptional = userRepository.findByUsername(username);
         if (userOptional.isPresent()) {
             User user = userOptional.get();
-            // 简单密码验证（实际项目中应该使用加密密码）
-            if (user.getPassword().equals(password)) {
+            // 使用BCrypt验证密码
+            if (passwordEncoder.matches(password, user.getPassword())) {
                 return user;
             }
         }
@@ -43,6 +46,10 @@ public class UserService {
             return false; // 邮箱已存在
         }
         
+        // 加密密码
+        String encryptedPassword = passwordEncoder.encode(user.getPassword());
+        user.setPassword(encryptedPassword);
+        
         // 保存用户
         userRepository.save(user);
         return true;
@@ -60,5 +67,12 @@ public class UserService {
      */
     public Optional<User> getUserById(Long id) {
         return userRepository.findById(id);
+    }
+    
+    /**
+     * 加密密码（用于手动加密）
+     */
+    public String encodePassword(String rawPassword) {
+        return passwordEncoder.encode(rawPassword);
     }
 }

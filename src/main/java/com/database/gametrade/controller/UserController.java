@@ -2,6 +2,9 @@ package com.database.gametrade.controller;
 
 import com.database.gametrade.entity.User;
 import com.database.gametrade.service.UserService;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -19,7 +22,7 @@ public class UserController {
      * POST /api/users/login
      */
     @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody LoginRequest loginRequest) {
+    public ResponseEntity<?> login(@Valid @RequestBody LoginRequest loginRequest) {
         User user = userService.login(loginRequest.getUsername(), loginRequest.getPassword());
         if (user != null) {
             // 登录成功，返回用户信息（不包含密码）
@@ -41,7 +44,7 @@ public class UserController {
      * POST /api/users/register
      */
     @PostMapping("/register")
-    public ResponseEntity<?> register(@RequestBody User user) {
+    public ResponseEntity<?> register(@Valid @RequestBody User user) {
         boolean success = userService.register(user);
         if (success) {
             return ResponseEntity.ok().build();
@@ -64,7 +67,12 @@ public class UserController {
      * 登录请求DTO
      */
     public static class LoginRequest {
+        @jakarta.validation.constraints.NotBlank(message = "用户名不能为空")
+        @jakarta.validation.constraints.Size(min = 3, max = 20, message = "用户名长度必须在3-20个字符之间")
         private String username;
+        
+        @jakarta.validation.constraints.NotBlank(message = "密码不能为空")
+        @jakarta.validation.constraints.Size(min = 8, message = "密码长度不能少于8位")
         private String password;
         
         // Getters and Setters

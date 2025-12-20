@@ -9,17 +9,28 @@ public class User {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     
-    @Column(unique = true, nullable = false)
+    @Column(name = "username", unique = true, nullable = false, length = 20)
+    @jakarta.validation.constraints.NotBlank(message = "用户名不能为空")
+    @jakarta.validation.constraints.Size(min = 3, max = 20, message = "用户名长度必须在3-20个字符之间")
+    @jakarta.validation.constraints.Pattern(regexp = "^[a-zA-Z0-9_\\u4e00-\\u9fa5]+$", message = "用户名只能包含字母、数字、下划线和中文字符")
     private String username;
     
-    @Column(nullable = false)
+    @Column(name = "password", nullable = false, length = 100)
+    @jakarta.validation.constraints.NotBlank(message = "密码不能为空")
+    @jakarta.validation.constraints.Size(min = 8, max = 100, message = "密码长度必须在8-100位之间")
     private String password;
     
-    @Column(unique = true)
+    @Column(name = "email", unique = true, length = 100)
+    @jakarta.validation.constraints.Email(message = "邮箱格式不正确")
+    @jakarta.validation.constraints.Size(max = 100, message = "邮箱长度不能超过100个字符")
     private String email;
     
+    @Column(name = "phone", length = 20)
+    @jakarta.validation.constraints.Pattern(regexp = "^1[3-9]\\d{9}$", message = "手机号格式不正确")
     private String phone;
     
+    @Column(name = "nickname", length = 50)
+    @jakarta.validation.constraints.Size(max = 50, message = "昵称长度不能超过50个字符")
     private String nickname;
     
     // 默认构造函数
