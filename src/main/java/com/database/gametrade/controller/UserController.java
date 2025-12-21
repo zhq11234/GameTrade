@@ -54,32 +54,9 @@ public class UserController {
      */
     @PostMapping("/register")
     public ResponseEntity<?> register(@Valid @RequestBody RegisterRequest registerRequest) {
-        // 调试日志：显示完整的请求数据
-        logger.info("=== 注册请求调试信息 ===");
-        logger.info("用户名: {}", registerRequest.getUsername());
-        logger.info("密码: {}", registerRequest.getPassword() != null ? "[已设置]" : "[null]");
-        logger.info("密码长度: {}", registerRequest.getPassword() != null ? registerRequest.getPassword().length() : 0);
-        logger.info("邮箱: {}", registerRequest.getEmail());
-        logger.info("手机: {}", registerRequest.getPhone());
-        logger.info("昵称: {}", registerRequest.getNickname());
-        logger.info("=== 调试信息结束 ===");
-
-        // 检查密码是否为空
-        if (registerRequest.getPassword() == null || registerRequest.getPassword().trim().isEmpty()) {
-            logger.warn("密码验证失败: 密码为空");
-            Map<String, String> error = new HashMap<>();
-            error.put("password", "密码不能为空");
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
-        }
-
-        // 检查密码长度
-        if (registerRequest.getPassword().length() < 8) {
-            logger.warn("密码验证失败: 密码长度不足8位");
-            Map<String, String> error = new HashMap<>();
-            error.put("password", "密码长度必须在8-100位之间");
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
-        }
-
+        // 记录基本的注册请求信息
+        logger.info("用户注册请求 - 用户名: {}", registerRequest.getUsername());
+        
         // 后续处理逻辑...
         User user = new User(
             registerRequest.getUsername(),
@@ -91,8 +68,10 @@ public class UserController {
         
         boolean success = userService.register(user);
         if (success) {
+            logger.info("用户注册成功 - 用户名: {}", registerRequest.getUsername());
             return ResponseEntity.ok().build();
         } else {
+            logger.warn("用户注册失败 - 用户名或邮箱已存在: {}", registerRequest.getUsername());
             return ResponseEntity.status(HttpStatus.CONFLICT).body("用户名或邮箱已存在");
         }
     }
