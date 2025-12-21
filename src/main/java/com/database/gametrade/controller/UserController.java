@@ -5,6 +5,7 @@ import com.database.gametrade.service.UserService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
+import lombok.Getter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -66,7 +67,9 @@ public class UserController {
     /**
      * 登录请求DTO
      */
+    @Getter
     public static class LoginRequest {
+        // Getters and Setters
         @jakarta.validation.constraints.NotBlank(message = "用户名不能为空")
         @jakarta.validation.constraints.Size(min = 3, max = 20, message = "用户名长度必须在3-20个字符之间")
         private String username;
@@ -74,20 +77,11 @@ public class UserController {
         @jakarta.validation.constraints.NotBlank(message = "密码不能为空")
         @jakarta.validation.constraints.Size(min = 8, message = "密码长度不能少于8位")
         private String password;
-        
-        // Getters and Setters
-        public String getUsername() {
-            return username;
-        }
-        
+
         public void setUsername(String username) {
             this.username = username;
         }
-        
-        public String getPassword() {
-            return password;
-        }
-        
+
         public void setPassword(String password) {
             this.password = password;
         }
@@ -96,7 +90,9 @@ public class UserController {
     /**
      * 用户响应DTO（不包含密码）
      */
+    @Getter
     public static class UserResponse {
+        // Getters and Setters
         private Long id;
         private String username;
         private String email;
@@ -112,44 +108,23 @@ public class UserController {
             this.phone = phone;
             this.nickname = nickname;
         }
-        
-        // Getters and Setters
-        public Long getId() {
-            return id;
-        }
-        
+
         public void setId(Long id) {
             this.id = id;
         }
-        
-        public String getUsername() {
-            return username;
-        }
-        
+
         public void setUsername(String username) {
             this.username = username;
         }
-        
-        public String getEmail() {
-            return email;
-        }
-        
+
         public void setEmail(String email) {
             this.email = email;
         }
-        
-        public String getPhone() {
-            return phone;
-        }
-        
+
         public void setPhone(String phone) {
             this.phone = phone;
         }
-        
-        public String getNickname() {
-            return nickname;
-        }
-        
+
         public void setNickname(String nickname) {
             this.nickname = nickname;
         }
