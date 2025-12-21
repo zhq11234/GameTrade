@@ -10,8 +10,13 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 @ControllerAdvice
 public class GlobalExceptionHandler {
+    
+    private static final Logger logger = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
     /**
      * 处理参数验证异常
@@ -19,12 +24,23 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<Map<String, String>> handleValidationExceptions(
             MethodArgumentNotValidException ex) {
+        // 记录详细的验证错误信息
+        logger.info("=== 验证错误调试信息 ===");
+        logger.info("验证异常类型: {}", ex.getClass().getSimpleName());
+        logger.info("错误数量: {}", ex.getBindingResult().getErrorCount());
+        
         Map<String, String> errors = new HashMap<>();
         ex.getBindingResult().getAllErrors().forEach((error) -> {
             String fieldName = ((FieldError) error).getField();
             String errorMessage = error.getDefaultMessage();
+            String rejectedValue = ((FieldError) error).getRejectedValue() != null ? 
+                ((FieldError) error).getRejectedValue().toString() : "null";
+            
+            logger.info("字段: {}, 错误: {}, 拒绝的值: {}", fieldName, errorMessage, rejectedValue);
             errors.put(fieldName, errorMessage);
         });
+        logger.info("=== 验证错误调试信息结束 ===");
+        
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errors);
     }
 

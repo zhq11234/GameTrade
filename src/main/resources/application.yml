@@ -33,7 +33,5 @@ spring:
 # ========== 其他配置 ==========
 server:
   port: 8080
-
-logging:
-  level:
-    com.database.gametrade: DEBUG
+  tomcat:
+    uri-encoding: UTF-8
