@@ -1,28 +1,103 @@
 package com.database.gametrade.service;
 
-import com.database.gametrade.entity.User;
-import com.database.gametrade.repository.UserRepository;
+import com.database.gametrade.entity.BuyerInfo;
+import com.database.gametrade.entity.UserInfo;
+import com.database.gametrade.entity.VendorInfo;
+import com.database.gametrade.repository.BuyerInfoRepository;
+import com.database.gametrade.repository.UserInfoRepository;
+import com.database.gametrade.repository.VendorInfoRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.Optional;
 
 @Service
 public class UserService {
     
     @Autowired
-    private UserRepository userRepository;
+    private UserInfoRepository userInfoRepository;
+    
+    @Autowired
+    private BuyerInfoRepository buyerInfoRepository;
+    
+    @Autowired
+    private VendorInfoRepository vendorInfoRepository;
     
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
     
     /**
+     * 买家注册
+     */
+    @Transactional
+    public boolean registerBuyer(String account, String password, String contact, String nickname) {
+        // 检查账号是否已存在
+        if (userInfoRepository.existsByAccount(account)) {
+            return false;
+        }
+        
+        // 检查联系方式是否已存在
+        if (userInfoRepository.existsByContact(contact)) {
+            return false;
+        }
+        
+        // 检查昵称是否已存在
+        if (buyerInfoRepository.existsByNickname(nickname)) {
+            return false;
+        }
+        
+        // 创建用户信息
+        UserInfo userInfo = new UserInfo(account, "buyer", passwordEncoder.encode(password), contact);
+        userInfoRepository.save(userInfo);
+        
+        // 创建买家信息
+        BuyerInfo buyerInfo = new BuyerInfo(nickname, account);
+        buyerInfoRepository.save(buyerInfo);
+        
+        return true;
+    }
+    
+    /**
+     * 厂商注册
+     */
+    @Transactional
+    public boolean registerVendor(String account, String password, String contact, 
+                                String companyName, String registeredAddress, String contactPerson) {
+        // 检查账号是否已存在
+        if (userInfoRepository.existsByAccount(account)) {
+            return false;
+        }
+        
+        // 检查联系方式是否已存在
+        if (userInfoRepository.existsByContact(contact)) {
+            return false;
+        }
+        
+        // 检查企业名是否已存在
+        if (vendorInfoRepository.existsByCompanyName(companyName)) {
+            return false;
+        }
+        
+        // 创建用户信息
+        UserInfo userInfo = new UserInfo(account, "vendor", passwordEncoder.encode(password), contact);
+        userInfoRepository.save(userInfo);
+        
+        // 创建厂商信息
+        VendorInfo vendorInfo = new VendorInfo(companyName, account, registeredAddress, contactPerson);
+        vendorInfoRepository.save(vendorInfo);
+        
+        return true;
+    }
+    
+    /**
      * 用户登录验证
      */
-    public User login(String username, String password) {
-        Optional<User> userOptional = userRepository.findByUsername(username);
+    public UserInfo login(String account, String password) {
+        Optional<UserInfo> userOptional = userInfoRepository.findByAccount(account);
         if (userOptional.isPresent()) {
-            User user = userOptional.get();
+            UserInfo user = userOptional.get();
             // 使用BCrypt验证密码
             if (passwordEncoder.matches(password, user.getPassword())) {
                 return user;
@@ -33,44 +108,35 @@ public class UserService {
     }
     
     /**
-     * 用户注册
+     * 检查账号是否存在
      */
-    public boolean register(User user) {
-        // 检查用户名是否已存在
-        if (userRepository.existsByUsername(user.getUsername())) {
-            return false; // 用户名已存在
-        }
-        
-        // 检查邮箱是否已存在
-        if (user.getEmail() != null && userRepository.existsByEmail(user.getEmail())) {
-            return false; // 邮箱已存在
-        }
-        
-        // 加密密码
-        String encryptedPassword = passwordEncoder.encode(user.getPassword());
-        user.setPassword(encryptedPassword);
-        
-        // 保存用户
-        userRepository.save(user);
-        return true;
+    public boolean checkAccountExists(String account) {
+        return userInfoRepository.existsByAccount(account);
     }
     
     /**
-     * 检查用户名是否存在
+     * 检查联系方式是否存在
      */
-    public boolean checkUsernameExists(String username) {
-        return userRepository.existsByUsername(username);
+    public boolean checkContactExists(String contact) {
+        return userInfoRepository.existsByContact(contact);
     }
     
     /**
-     * 根据ID获取用户
+     * 检查昵称是否存在
      */
-    public Optional<User> getUserById(Long id) {
-        return userRepository.findById(id);
+    public boolean checkNicknameExists(String nickname) {
+        return buyerInfoRepository.existsByNickname(nickname);
     }
     
     /**
-     * 加密密码（用于手动加密）
+     * 检查企业名是否存在
+     */
+    public boolean checkCompanyNameExists(String companyName) {
+        return vendorInfoRepository.existsByCompanyName(companyName);
+    }
+    
+    /**
+     * 加密密码
      */
     public String encodePassword(String rawPassword) {
         return passwordEncoder.encode(rawPassword);
