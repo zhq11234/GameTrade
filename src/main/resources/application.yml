@@ -2,6 +2,7 @@ spring:
   application:
     name: GameTrade
   
+  
   # ========== 数据库配置 ==========
   datasource:
     url: jdbc:sqlserver://localhost\\SQLEXPRESS:1433;databaseName=GameTrade;encrypt=true;trustServerCertificate=true;
@@ -29,6 +30,11 @@ spring:
         jdbc:
           batch_size: 20
           fetch_size: 50
+
+# ========== 日志配置 ==========
+logging:
+  charset:
+    console: UTF-8
 
 # ========== 其他配置 ==========
 server:

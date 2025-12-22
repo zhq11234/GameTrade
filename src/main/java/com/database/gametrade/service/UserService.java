@@ -11,7 +11,8 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 
 @Service
@@ -135,10 +136,39 @@ public class UserService {
         return vendorInfoRepository.existsByCompanyName(companyName);
     }
     
+    // 简单的登录状态跟踪（生产环境应使用Redis或数据库）
+    private final Map<String, String> loggedInUsers = new HashMap<>();
+    
     /**
-     * 加密密码
+     * 记录用户登录状态
      */
-    public String encodePassword(String rawPassword) {
-        return passwordEncoder.encode(rawPassword);
+    public void recordLogin(String account, String role) {
+        loggedInUsers.put(account, role);
     }
+    
+    /**
+     * 用户登出
+     */
+    public boolean logout(String account) {
+        if (loggedInUsers.containsKey(account)) {
+            loggedInUsers.remove(account);
+            return true;
+        }
+        return false;
+    }
+    
+    /**
+     * 检查用户是否已登录
+     */
+    public boolean isUserLoggedIn(String account) {
+        return loggedInUsers.containsKey(account);
+    }
+    
+    /**
+     * 获取用户角色
+     */
+    public String getUserRole(String account) {
+        return loggedInUsers.get(account);
+    }
+
 }

@@ -2,20 +2,16 @@ package com.database.gametrade.controller;
 
 import com.database.gametrade.entity.UserInfo;
 import com.database.gametrade.service.UserService;
+import com.database.gametrade.util.LogUtil;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.HashMap;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/api/users")
@@ -23,7 +19,9 @@ public class UserController {
     
     @Autowired
     private UserService userService;
-    private static final Logger logger = LoggerFactory.getLogger(UserController.class);
+    
+    @Autowired
+    private LogUtil logUtil;
     
     /**
      * 买家注册
@@ -31,7 +29,7 @@ public class UserController {
      */
     @PostMapping("/register/buyer")
     public ResponseEntity<?> registerBuyer(@Valid @RequestBody BuyerRegisterRequest registerRequest) {
-        logger.info("买家注册请求 - 账号: {}, 昵称: {}", registerRequest.getAccount(), registerRequest.getNickname());
+        logUtil.logBuyerRegisterRequest(registerRequest.getAccount(), registerRequest.getNickname());
         
         boolean success = userService.registerBuyer(
             registerRequest.getAccount(),
@@ -41,10 +39,10 @@ public class UserController {
         );
         
         if (success) {
-            logger.info("买家注册成功 - 账号: {}", registerRequest.getAccount());
+            logUtil.logBuyerRegisterSuccess(registerRequest.getAccount(), registerRequest.getNickname());
             return ResponseEntity.ok().build();
         } else {
-            logger.warn("买家注册失败 - 账号: {}", registerRequest.getAccount());
+            logUtil.logBuyerRegisterFailure(registerRequest.getAccount(), "账号、联系方式或昵称已存在");
             return ResponseEntity.status(HttpStatus.CONFLICT).body("账号、联系方式或昵称已存在");
         }
     }
@@ -55,7 +53,7 @@ public class UserController {
      */
     @PostMapping("/register/vendor")
     public ResponseEntity<?> registerVendor(@Valid @RequestBody VendorRegisterRequest registerRequest) {
-        logger.info("厂商注册请求 - 账号: {}, 企业名: {}", registerRequest.getAccount(), registerRequest.getCompanyName());
+        logUtil.logVendorRegisterRequest(registerRequest.getAccount(), registerRequest.getCompanyName());
         
         boolean success = userService.registerVendor(
             registerRequest.getAccount(),
@@ -67,10 +65,10 @@ public class UserController {
         );
         
         if (success) {
-            logger.info("厂商注册成功 - 账号: {}", registerRequest.getAccount());
+            logUtil.logVendorRegisterSuccess(registerRequest.getAccount(), registerRequest.getCompanyName());
             return ResponseEntity.ok().build();
         } else {
-            logger.warn("厂商注册失败 - 账号: {}", registerRequest.getAccount());
+            logUtil.logVendorRegisterFailure(registerRequest.getAccount(), "账号、联系方式或企业名已存在");
             return ResponseEntity.status(HttpStatus.CONFLICT).body("账号、联系方式或企业名已存在");
         }
     }
@@ -90,12 +88,43 @@ public class UserController {
                 user.getContact(),
                 user.getRegisterTime()
             );
-            logger.info("用户登录成功 - 账号: {}, 角色: {}", user.getAccount(), user.getRole());
+            
+            // 根据用户角色记录不同的登录成功日志
+            if ("buyer".equals(user.getRole())) {
+                logUtil.logBuyerLoginSuccess(user.getAccount(), "未知昵称"); // 暂时使用占位符
+            } else if ("vendor".equals(user.getRole())) {
+                logUtil.logVendorLoginSuccess(user.getAccount(), "未知企业名"); // 暂时使用占位符
+            } else {
+                logUtil.logWarning("未知用户角色登录成功 - 账号: " + user.getAccount() + ", 角色: " + user.getRole());
+            }
+            
             return ResponseEntity.ok(userResponse);
         } else {
-            logger.warn("用户登录失败 - 账号: {}", loginRequest.getAccount());
+            logUtil.logBuyerLoginFailure(loginRequest.getAccount(), "账号或密码错误");
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("账号或密码错误");
         }
+    }
+    
+    /**
+     * 买家登出
+     * POST /api/users/logout/buyer
+     */
+    @PostMapping("/logout/buyer")
+    public ResponseEntity<?> logoutBuyer(@RequestParam String account) {
+        // 这里可以添加登出逻辑，比如清除session或token
+        logUtil.logBuyerLogout(account, "未知昵称"); // 暂时使用占位符
+        return ResponseEntity.ok().body("买家登出成功");
+    }
+    
+    /**
+     * 商家登出
+     * POST /api/users/logout/vendor
+     */
+    @PostMapping("/logout/vendor")
+    public ResponseEntity<?> logoutVendor(@RequestParam String account) {
+        // 这里可以添加登出逻辑，比如清除session或token
+        logUtil.logVendorLogout(account, "未知企业名"); // 暂时使用占位符
+        return ResponseEntity.ok().body("商家登出成功");
     }
     
     /**

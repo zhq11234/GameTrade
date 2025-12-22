@@ -3,6 +3,7 @@ package com.database.gametrade.entity;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
+
 import java.time.LocalDate;
 
 @Entity
@@ -24,7 +25,7 @@ public class BuyerInfo {
     
     @Column(name = "gender", length = 10, nullable = false)
     @NotBlank(message = "性别不能为空")
-    @Size(max = 1, message = "性别长度不能超过1个字符")
+    @Size(max = 10, message = "性别长度不能超过10个字符")
     private String gender = "男";
     
     @Column(name = "birthdate", nullable = false)

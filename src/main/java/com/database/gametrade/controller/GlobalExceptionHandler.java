@@ -1,5 +1,7 @@
 package com.database.gametrade.controller;
 
+import com.database.gametrade.util.LogUtil;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
@@ -10,13 +12,11 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 @ControllerAdvice
 public class GlobalExceptionHandler {
     
-    private static final Logger logger = LoggerFactory.getLogger(GlobalExceptionHandler.class);
+    @Autowired
+    private LogUtil logUtil;
 
     /**
      * 处理参数验证异常
@@ -31,7 +31,7 @@ public class GlobalExceptionHandler {
             errors.put(fieldName, errorMessage);
         });
         
-        logger.warn("参数验证失败 - 错误数量: {}", ex.getBindingResult().getErrorCount());
+        logUtil.logWarning("参数验证失败 - 错误数量: " + ex.getBindingResult().getErrorCount());
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errors);
     }
 
@@ -43,7 +43,10 @@ public class GlobalExceptionHandler {
         Map<String, String> error = new HashMap<>();
         error.put("error", "系统内部错误");
         error.put("message", ex.getMessage());
-        // 生产环境中应该记录详细日志，但不要返回给客户端
+        
+        // 记录错误日志
+        logUtil.logError("系统内部错误", ex);
+        
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
     }
 
@@ -55,6 +58,9 @@ public class GlobalExceptionHandler {
         Map<String, String> error = new HashMap<>();
         error.put("error", "数据异常");
         error.put("message", "请求数据不完整或格式错误");
+        
+        logUtil.logError("空指针异常", ex);
+        
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
     }
 
@@ -66,6 +72,9 @@ public class GlobalExceptionHandler {
         Map<String, String> error = new HashMap<>();
         error.put("error", "参数错误");
         error.put("message", ex.getMessage());
+        
+        logUtil.logError("非法参数异常", ex);
+        
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
     }
 }
