@@ -1,6 +1,10 @@
 package com.database.gametrade.controller;
 
+import com.database.gametrade.entity.BuyerInfo;
 import com.database.gametrade.entity.UserInfo;
+import com.database.gametrade.entity.VendorInfo;
+import com.database.gametrade.repository.BuyerInfoRepository;
+import com.database.gametrade.repository.VendorInfoRepository;
 import com.database.gametrade.service.UserService;
 import com.database.gametrade.util.LogUtil;
 import jakarta.validation.Valid;
@@ -13,6 +17,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Optional;
+
 @RestController
 @RequestMapping("/api/users")
 public class UserController {
@@ -22,6 +28,12 @@ public class UserController {
     
     @Autowired
     private LogUtil logUtil;
+    
+    @Autowired
+    private BuyerInfoRepository buyerInfoRepository;
+    
+    @Autowired
+    private VendorInfoRepository vendorInfoRepository;
     
     /**
      * 买家注册
@@ -91,9 +103,15 @@ public class UserController {
             
             // 根据用户角色记录不同的登录成功日志
             if ("buyer".equals(user.getRole())) {
-                logUtil.logBuyerLoginSuccess(user.getAccount(), "未知昵称"); // 暂时使用占位符
+                // 查询买家信息获取昵称
+                Optional<BuyerInfo> buyerInfo = buyerInfoRepository.findByAccount(user.getAccount());
+                String nickname = buyerInfo.map(BuyerInfo::getNickname).orElse("未知昵称");
+                logUtil.logBuyerLoginSuccess(user.getAccount(), nickname);
             } else if ("vendor".equals(user.getRole())) {
-                logUtil.logVendorLoginSuccess(user.getAccount(), "未知企业名"); // 暂时使用占位符
+                // 查询厂商信息获取企业名
+                Optional<VendorInfo> vendorInfo = vendorInfoRepository.findByAccount(user.getAccount());
+                String companyName = vendorInfo.map(VendorInfo::getCompanyName).orElse("未知企业名");
+                logUtil.logVendorLoginSuccess(user.getAccount(), companyName);
             } else {
                 logUtil.logWarning("未知用户角色登录成功 - 账号: " + user.getAccount() + ", 角色: " + user.getRole());
             }
@@ -112,7 +130,9 @@ public class UserController {
     @PostMapping("/logout/buyer")
     public ResponseEntity<?> logoutBuyer(@RequestParam String account) {
         // 这里可以添加登出逻辑，比如清除session或token
-        logUtil.logBuyerLogout(account, "未知昵称"); // 暂时使用占位符
+        Optional<BuyerInfo> buyerInfo = buyerInfoRepository.findByAccount(account);
+        String nickname = buyerInfo.map(BuyerInfo::getNickname).orElse("未知昵称");
+        logUtil.logBuyerLogout(account, nickname);
         return ResponseEntity.ok().body("买家登出成功");
     }
     
@@ -123,7 +143,9 @@ public class UserController {
     @PostMapping("/logout/vendor")
     public ResponseEntity<?> logoutVendor(@RequestParam String account) {
         // 这里可以添加登出逻辑，比如清除session或token
-        logUtil.logVendorLogout(account, "未知企业名"); // 暂时使用占位符
+        Optional<VendorInfo> vendorInfo = vendorInfoRepository.findByAccount(account);
+        String companyName = vendorInfo.map(VendorInfo::getCompanyName).orElse("未知企业名");
+        logUtil.logVendorLogout(account, companyName);
         return ResponseEntity.ok().body("商家登出成功");
     }
     

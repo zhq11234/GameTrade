@@ -1,5 +1,7 @@
 package com.database.gametrade.entity;
 
+import com.database.gametrade.entity.BuyerInfo;
+import com.database.gametrade.entity.VendorInfo;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -12,6 +14,12 @@ import java.time.LocalDateTime;
     @UniqueConstraint(columnNames = "contact")
 })
 public class UserInfo {
+    
+    @OneToOne(mappedBy = "userInfo", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private BuyerInfo buyerInfo;
+    
+    @OneToOne(mappedBy = "userInfo", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private VendorInfo vendorInfo;
     
     @Id
     @Column(name = "account", length = 50, nullable = false)
@@ -36,6 +44,23 @@ public class UserInfo {
     
     @Column(name = "register_time", nullable = false)
     private LocalDateTime registerTime;
+    
+    // Getters and Setters for buyerInfo and vendorInfo
+    public BuyerInfo getBuyerInfo() {
+        return buyerInfo;
+    }
+    
+    public void setBuyerInfo(BuyerInfo buyerInfo) {
+        this.buyerInfo = buyerInfo;
+    }
+    
+    public VendorInfo getVendorInfo() {
+        return vendorInfo;
+    }
+    
+    public void setVendorInfo(VendorInfo vendorInfo) {
+        this.vendorInfo = vendorInfo;
+    }
     
     // 默认构造函数
     public UserInfo() {
