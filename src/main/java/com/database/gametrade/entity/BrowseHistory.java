@@ -3,15 +3,18 @@ package com.database.gametrade.entity;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
+import lombok.Getter;
 
 import java.io.Serializable;
 import java.util.Objects;
 
+@Getter
 @Entity
 @Table(name = "browse_history")
 @IdClass(BrowseHistory.BrowseHistoryId.class)
 public class BrowseHistory {
 
+    // Getters and Setters
     @Id
     @Column(name = "nickname", length = 50, nullable = false)
     @NotBlank(message = "昵称不能为空")
@@ -53,41 +56,20 @@ public class BrowseHistory {
         this.browseCount = browseCount != null ? browseCount : 0;
     }
 
-    // Getters and Setters
-    public String getNickname() {
-        return nickname;
-    }
-
     public void setNickname(String nickname) {
         this.nickname = nickname;
-    }
-
-    public String getGameName() {
-        return gameName;
     }
 
     public void setGameName(String gameName) {
         this.gameName = gameName;
     }
 
-    public Integer getBrowseCount() {
-        return browseCount;
-    }
-
     public void setBrowseCount(Integer browseCount) {
         this.browseCount = browseCount != null ? browseCount : 0;
     }
 
-    public BuyerInfo getBuyerInfo() {
-        return buyerInfo;
-    }
-
     public void setBuyerInfo(BuyerInfo buyerInfo) {
         this.buyerInfo = buyerInfo;
-    }
-
-    public GameInfo getGameInfo() {
-        return gameInfo;
     }
 
     public void setGameInfo(GameInfo gameInfo) {
@@ -117,12 +99,8 @@ public class BrowseHistory {
 
         @Override
         public boolean equals(Object o) {
-            if (this == o) {
-                return true;
-            }
-            if (o == null || getClass() != o.getClass()) {
-                return false;
-            }
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
             BrowseHistoryId that = (BrowseHistoryId) o;
             return Objects.equals(nickname, that.nickname) &&
                     Objects.equals(gameName, that.gameName);
