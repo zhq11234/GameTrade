@@ -39,5 +39,6 @@ logging:
 # ========== 其他配置 ==========
 server:
   port: 8080
+  address: 0.0.0.0
   tomcat:
     uri-encoding: UTF-8
