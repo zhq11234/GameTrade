@@ -183,17 +183,32 @@ public class UserService {
 
         UserInfo user = userOptional.get();
         String role = user.getRole();
+        String contact = user.getContact();
 
-        // 根据角色查询对应的个人信息
+        // 根据角色查询对应的个人信息并转换为DTO
         if ("buyer".equals(role)) {
             Optional<BuyerInfo> buyerInfo = buyerInfoRepository.findByAccount(account);
             if (buyerInfo.isPresent()) {
-                return buyerInfo.get();
+                BuyerInfo buyer = buyerInfo.get();
+                return new com.database.gametrade.dto.BuyerInfoDTO(
+                        buyer.getNickname(),
+                        buyer.getAccount(),
+                        buyer.getGender(),
+                        buyer.getBirthdate(),
+                        contact
+                );
             }
         } else if ("vendor".equals(role)) {
             Optional<VendorInfo> vendorInfo = vendorInfoRepository.findByAccount(account);
             if (vendorInfo.isPresent()) {
-                return vendorInfo.get();
+                VendorInfo vendor = vendorInfo.get();
+                return new com.database.gametrade.dto.VendorInfoDTO(
+                        vendor.getCompanyName(),
+                        vendor.getAccount(),
+                        vendor.getRegisteredAddress(),
+                        vendor.getContactPerson(),
+                        contact
+                );
             }
         }
 
