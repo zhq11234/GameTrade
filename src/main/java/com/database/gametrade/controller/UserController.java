@@ -1,5 +1,6 @@
 package com.database.gametrade.controller;
 
+import com.database.gametrade.dto.*;
 import com.database.gametrade.entity.BuyerInfo;
 import com.database.gametrade.entity.UserInfo;
 import com.database.gametrade.entity.VendorInfo;
@@ -8,18 +9,11 @@ import com.database.gametrade.repository.VendorInfoRepository;
 import com.database.gametrade.service.UserService;
 import com.database.gametrade.util.LogUtil;
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.DecimalMin;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Size;
-import lombok.Getter;
-import lombok.Setter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.math.BigDecimal;
-import java.util.Map;
 import java.util.Optional;
 
 @RestController
@@ -43,7 +37,7 @@ public class UserController {
      * POST /api/users/register/buyer
      */
     @PostMapping("/register/buyer")
-    public ResponseEntity<?> registerBuyer(@Valid @RequestBody BuyerRegisterRequest registerRequest) {
+    public ResponseEntity<?> registerBuyer(@Valid @RequestBody BuyerRegisterRequestDTO registerRequest) {
         logUtil.logBuyerRegisterRequest(registerRequest.getAccount(), registerRequest.getNickname());
 
         boolean success = userService.registerBuyer(
@@ -67,7 +61,7 @@ public class UserController {
      * POST /api/users/register/vendor
      */
     @PostMapping("/register/vendor")
-    public ResponseEntity<?> registerVendor(@Valid @RequestBody VendorRegisterRequest registerRequest) {
+    public ResponseEntity<?> registerVendor(@Valid @RequestBody VendorRegisterRequestDTO registerRequest) {
         logUtil.logVendorRegisterRequest(registerRequest.getAccount(), registerRequest.getCompanyName());
 
         boolean success = userService.registerVendor(
@@ -93,11 +87,11 @@ public class UserController {
      * POST /api/users/login
      */
     @PostMapping("/login")
-    public ResponseEntity<?> login(@Valid @RequestBody LoginRequest loginRequest) {
+    public ResponseEntity<?> login(@Valid @RequestBody LoginRequestDTO loginRequest) {
         UserInfo user = userService.login(loginRequest.getAccount(), loginRequest.getPassword());
         if (user != null) {
             // 登录成功，返回用户信息（不包含密码）
-            UserResponse userResponse = new UserResponse(
+            UserResponseDTO userResponse = new UserResponseDTO(
                     user.getAccount(),
                     user.getRole(),
                     user.getContact(),
@@ -231,7 +225,7 @@ public class UserController {
      * POST /api/users/create-game
      */
     @PostMapping("/create-game")
-    public ResponseEntity<?> createGame(@Valid @RequestBody GameCreateRequest createRequest) {
+    public ResponseEntity<?> createGame(@Valid @RequestBody GameCreateRequestDTO createRequest) {
         logUtil.logDebug("创建游戏 - 账号: " + createRequest.getAccount() + ", 游戏名: " + createRequest.getGameName());
 
         int result = userService.createGame(
@@ -271,7 +265,7 @@ public class UserController {
      * POST /api/users/query-vendor-games
      */
     @PostMapping("/query-vendor-games")
-    public ResponseEntity<?> queryVendorGames(@Valid @RequestBody VendorGameQueryRequest queryRequest) {
+    public ResponseEntity<?> queryVendorGames(@Valid @RequestBody VendorGameQueryRequestDTO queryRequest) {
         logUtil.logDebug("查询厂商游戏 - 账号: " + queryRequest.getAccount());
 
         Object result = userService.queryVendorGames(queryRequest.getAccount());
@@ -301,7 +295,7 @@ public class UserController {
      * POST /api/users/query-game-info
      */
     @PostMapping("/query-game-info")
-    public ResponseEntity<?> queryGameInfo(@Valid @RequestBody GameInfoQueryRequest queryRequest) {
+    public ResponseEntity<?> queryGameInfo(@Valid @RequestBody GameInfoQueryRequestDTO queryRequest) {
         logUtil.logDebug("查询游戏信息 - 游戏名: " + queryRequest.getGameName());
 
         Object result = userService.queryGameInfo(queryRequest.getGameName());
@@ -331,7 +325,7 @@ public class UserController {
      * POST /api/users/query-game-info-fuzzy
      */
     @PostMapping("/query-game-info-fuzzy")
-    public ResponseEntity<?> queryGameInfoFuzzy(@Valid @RequestBody GameInfoFuzzyQueryRequest queryRequest) {
+    public ResponseEntity<?> queryGameInfoFuzzy(@Valid @RequestBody GameInfoFuzzyQueryRequestDTO queryRequest) {
         logUtil.logDebug("模糊查询游戏信息 - 关键词: " + queryRequest.getKeyword());
 
         Object result = userService.queryGameInfoFuzzy(queryRequest.getKeyword());
@@ -351,7 +345,7 @@ public class UserController {
      * PUT /api/users/update-game
      */
     @PutMapping("/update-game")
-    public ResponseEntity<?> updateGame(@Valid @RequestBody GameUpdateRequest updateRequest) {
+    public ResponseEntity<?> updateGame(@Valid @RequestBody GameUpdateRequestDTO updateRequest) {
         logUtil.logDebug("修改游戏信息 - 账号: " + updateRequest.getAccount() + ", 游戏名: " + updateRequest.getGameName());
 
         int result = userService.updateGameInfo(
@@ -389,179 +383,134 @@ public class UserController {
     }
 
     /**
-     * 买家注册请求DTO
+     * 游戏上架申请（厂商）
+     * POST /api/users/game-application
      */
-    @Setter
-    @Getter
-    public static class BuyerRegisterRequest {
-        @NotBlank(message = "角色不能为空")
-        @Size(max = 20, message = "角色长度不能超过20个字符")
-        private String role = "buyer";
+    @PostMapping("/game-application")
+    public ResponseEntity<?> createGameApplication(@Valid @RequestBody GameApplicationRequestDTO applicationRequest) {
+        logUtil.logDebug("创建游戏上架申请 - 账号: " + applicationRequest.getAccount() + ", 游戏名: " + applicationRequest.getGameName());
 
-        @NotBlank(message = "账号不能为空")
-        @Size(max = 50, message = "账号长度不能超过50个字符")
-        private String account;
+        int result = userService.createGameApplication(
+                applicationRequest.getAccount(),
+                applicationRequest.getGameName()
+        );
 
-        @NotBlank(message = "密码不能为空")
-        @Size(max = 100, message = "密码长度不能超过100个字符")
-        private String password;
-
-        @NotBlank(message = "联系方式不能为空")
-        @Size(max = 100, message = "联系方式长度不能超过100个字符")
-        private String contact;
-
-        @NotBlank(message = "昵称不能为空")
-        @Size(max = 50, message = "昵称长度不能超过50个字符")
-        private String nickname;
-    }
-
-    /**
-     * 厂商注册请求DTO
-     */
-    @Setter
-    @Getter
-    public static class VendorRegisterRequest {
-        @NotBlank(message = "角色不能为空")
-        @Size(max = 20, message = "角色长度不能超过20个字符")
-        private String role = "vendor";
-
-        @NotBlank(message = "账号不能为空")
-        @Size(max = 50, message = "账号长度不能超过50个字符")
-        private String account;
-
-        @NotBlank(message = "密码不能为空")
-        @Size(max = 100, message = "密码长度不能超过100个字符")
-        private String password;
-
-        @NotBlank(message = "联系方式不能为空")
-        @Size(max = 100, message = "联系方式长度不能超过100个字符")
-        private String contact;
-
-        @NotBlank(message = "企业名不能为空")
-        @Size(max = 100, message = "企业名长度不能超过100个字符")
-        private String companyName;
-
-        @NotBlank(message = "注册地址不能为空")
-        @Size(max = 200, message = "注册地址长度不能超过200个字符")
-        private String registeredAddress;
-
-        @NotBlank(message = "联系人不能为空")
-        @Size(max = 50, message = "联系人长度不能超过50个字符")
-        private String contactPerson;
-    }
-
-    /**
-     * 登录请求DTO
-     */
-    @Setter
-    @Getter
-    public static class LoginRequest {
-        @NotBlank(message = "账号不能为空")
-        @Size(max = 50, message = "账号长度不能超过50个字符")
-        private String account;
-
-        @NotBlank(message = "密码不能为空")
-        @Size(max = 100, message = "密码长度不能超过100个字符")
-        private String password;
-    }
-
-    /**
-     * 用户响应DTO（不包含密码）
-     */
-    @Setter
-    @Getter
-    public static class UserResponse {
-        private String account;
-        private String role;
-        private String contact;
-        private String registerTime;
-
-        public UserResponse() {}
-
-        public UserResponse(String account, String role, String contact, java.time.LocalDateTime registerTime) {
-            this.account = account;
-            this.role = role;
-            this.contact = contact;
-            this.registerTime = registerTime != null ? registerTime.toString() : null;
+        switch (result) {
+            case 0:
+                logUtil.logDebug("游戏上架申请创建成功 - 账号: " + applicationRequest.getAccount() + ", 游戏名: " + applicationRequest.getGameName());
+                return ResponseEntity.ok().body("游戏上架申请创建成功");
+            case -1:
+                logUtil.logWarning("游戏上架申请失败 - 厂商账号不存在: " + applicationRequest.getAccount());
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body("厂商账号不存在或不是供应商角色");
+            case -2:
+                logUtil.logWarning("游戏上架申请失败 - 游戏不存在或不属于该厂商: " + applicationRequest.getGameName());
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body("游戏不存在或不属于该厂商");
+            case -3:
+                logUtil.logWarning("游戏上架申请失败 - 游戏已上架，无需重复申请: " + applicationRequest.getGameName());
+                return ResponseEntity.status(HttpStatus.CONFLICT).body("游戏已上架，无需重复申请");
+            case -4:
+                logUtil.logWarning("游戏上架申请失败 - 该游戏已有待审批的申请: " + applicationRequest.getGameName());
+                return ResponseEntity.status(HttpStatus.CONFLICT).body("该游戏已有待审批的申请");
+            default:
+                logUtil.logWarning("游戏上架申请失败 - 未知错误: " + result);
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("游戏上架申请失败，请稍后重试");
         }
     }
 
-    @Setter
-    @Getter
-    public static class GameCreateRequest {
-        @NotBlank(message = "账号不能为空")
-        @Size(max = 50, message = "账号长度不能超过50个字符")
-        private String account;
+    /**
+     * 游戏下架（厂商）
+     * PUT /api/users/game-off-shelf
+     */
+    @PutMapping("/game-off-shelf")
+    public ResponseEntity<?> offShelfGame(@Valid @RequestBody GameOffShelfRequestDTO offShelfRequest) {
+        logUtil.logDebug("游戏下架 - 账号: " + offShelfRequest.getAccount() + ", 游戏名: " + offShelfRequest.getGameName());
 
-        @NotBlank(message = "游戏名不能为空")
-        @Size(max = 100, message = "游戏名长度不能超过100个字符")
-        private String gameName;
+        int result = userService.offShelfGame(
+                offShelfRequest.getAccount(),
+                offShelfRequest.getGameName()
+        );
 
-        @NotBlank(message = "游戏类别不能为空")
-        @Size(max = 50, message = "游戏类别长度不能超过50个字符")
-        private String category;
-
-        @DecimalMin(value = "0.0", message = "价格不能为负数")
-        private BigDecimal price;
-
-        @NotBlank(message = "游戏简介不能为空")
-        @Size(max = 500, message = "游戏简介长度不能超过500个字符")
-        private String description;
-
-        @NotBlank(message = "下载链接不能为空")
-        @Size(max = 255, message = "下载链接长度不能超过255个字符")
-        private String downloadLink;
-
-        @NotBlank(message = "版号不能为空")
-        @Size(max = 50, message = "版号长度不能超过50个字符")
-        private String licenseNumber;
+        switch (result) {
+            case 0:
+                logUtil.logDebug("游戏下架成功 - 账号: " + offShelfRequest.getAccount() + ", 游戏名: " + offShelfRequest.getGameName());
+                return ResponseEntity.ok().body("游戏下架成功");
+            case -1:
+                logUtil.logWarning("游戏下架失败 - 厂商账号不存在: " + offShelfRequest.getAccount());
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body("厂商账号不存在或不是供应商角色");
+            case -2:
+                logUtil.logWarning("游戏下架失败 - 游戏不存在或不属于该厂商: " + offShelfRequest.getGameName());
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body("游戏不存在或不属于该厂商");
+            case -3:
+                logUtil.logWarning("游戏下架失败 - 游戏已处于下架状态: " + offShelfRequest.getGameName());
+                return ResponseEntity.status(HttpStatus.CONFLICT).body("游戏已处于下架状态，无需重复操作");
+            default:
+                logUtil.logWarning("游戏下架失败 - 未知错误: " + result);
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("游戏下架失败，请稍后重试");
+        }
     }
 
-    @Setter
-    @Getter
-    public static class VendorGameQueryRequest {
-        @NotBlank(message = "厂商账号不能为空")
-        @Size(max = 50, message = "厂商账号长度不能超过50个字符")
-        private String account;
+    /**
+     * 厂商查询游戏上架申请
+     * POST /api/users/query-game-applications
+     */
+    @PostMapping("/query-game-applications")
+    public ResponseEntity<?> queryGameApplications(@Valid @RequestBody GameApplicationQueryRequestDTO queryRequest) {
+        logUtil.logDebug("查询游戏上架申请 - 账号: " + queryRequest.getAccount() + ", 状态: " + queryRequest.getApprovalStatus());
+
+        Object result = userService.queryGameApplications(
+                queryRequest.getAccount(),
+                queryRequest.getApprovalStatus()
+        );
+        
+        if (result instanceof Integer) {
+            int returnValue = (Integer) result;
+            switch (returnValue) {
+                case -1:
+                    logUtil.logWarning("游戏上架申请查询失败 - 厂商账号不存在: " + queryRequest.getAccount());
+                    return ResponseEntity.status(HttpStatus.NOT_FOUND).body("厂商账号不存在或不是供应商角色");
+                case -99:
+                    logUtil.logError("游戏上架申请查询失败 - 存储过程执行异常", null);
+                    return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("查询失败，请稍后重试");
+                default:
+                    logUtil.logWarning("游戏上架申请查询失败 - 未知错误: " + returnValue);
+                    return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("查询失败，请稍后重试");
+            }
+        } else {
+            // 返回查询结果
+            logUtil.logDebug("游戏上架申请查询成功 - 账号: " + queryRequest.getAccount());
+            return ResponseEntity.ok(result);
+        }
     }
 
-    @Setter
-    @Getter
-    public static class GameInfoQueryRequest {
-        @NotBlank(message = "游戏名不能为空")
-        @Size(max = 100, message = "游戏名长度不能超过100个字符")
-        private String gameName;
-    }
+    /**
+     * 厂商取消游戏上架申请
+     * DELETE /api/users/cancel-game-application
+     */
+    @DeleteMapping("/cancel-game-application")
+    public ResponseEntity<?> cancelGameApplication(@Valid @RequestBody GameApplicationCancelRequestDTO cancelRequest) {
+        logUtil.logDebug("取消游戏上架申请 - 账号: " + cancelRequest.getAccount() + ", 申请编号: " + cancelRequest.getApplicationId());
 
-    @Setter
-    @Getter
-    public static class GameInfoFuzzyQueryRequest {
-        @NotBlank(message = "游戏名关键词不能为空")
-        @Size(max = 100, message = "游戏名关键词长度不能超过100个字符")
-        private String keyword;
-    }
+        int result = userService.cancelGameApplication(
+                cancelRequest.getAccount(),
+                cancelRequest.getApplicationId()
+        );
 
-    @Setter
-    @Getter
-    public static class GameUpdateRequest {
-        @NotBlank(message = "厂商账号不能为空")
-        @Size(max = 50, message = "厂商账号长度不能超过50个字符")
-        private String account;
-
-        @NotBlank(message = "游戏名不能为空")
-        @Size(max = 100, message = "游戏名长度不能超过100个字符")
-        private String gameName;
-
-        @DecimalMin(value = "0.0", message = "价格不能为负数")
-        private BigDecimal price;
-
-        @Size(max = 500, message = "游戏简介长度不能超过500个字符")
-        private String description;
-
-        @Size(max = 50, message = "版号长度不能超过50个字符")
-        private String licenseNumber;
-
-        @Size(max = 255, message = "下载链接长度不能超过255个字符")
-        private String downloadLink;
+        switch (result) {
+            case 0:
+                logUtil.logDebug("游戏上架申请取消成功 - 账号: " + cancelRequest.getAccount() + ", 申请编号: " + cancelRequest.getApplicationId());
+                return ResponseEntity.ok().body("游戏上架申请取消成功");
+            case -1:
+                logUtil.logWarning("游戏上架申请取消失败 - 厂商账号不存在: " + cancelRequest.getAccount());
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body("厂商账号不存在或不是供应商角色");
+            case -2:
+                logUtil.logWarning("游戏上架申请取消失败 - 申请不存在或不属于该厂商: " + cancelRequest.getApplicationId());
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body("申请不存在或不属于该厂商");
+            case -3:
+                logUtil.logWarning("游戏上架申请取消失败 - 只能取消待审批的申请: " + cancelRequest.getApplicationId());
+                return ResponseEntity.status(HttpStatus.CONFLICT).body("只能取消待审批的申请");
+            default:
+                logUtil.logWarning("游戏上架申请取消失败 - 未知错误: " + result);
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("游戏上架申请取消失败，请稍后重试");
+        }
     }
 }

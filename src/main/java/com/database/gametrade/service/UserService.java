@@ -513,4 +513,157 @@ public class UserService {
         }
     }
 
+    /**
+     * 创建游戏上架申请（调用存储过程）
+     */
+    @Transactional
+    public int createGameApplication(String account, String gameName) {
+        try {
+            // 调用存储过程 sp_create_game_application
+            Query query = entityManager.createNativeQuery("{call sp_create_game_application(?, ?)}");
+            
+            // 设置存储过程参数
+            query.setParameter(1, account);
+            query.setParameter(2, gameName);
+            
+            // 执行存储过程并获取返回值
+            Object result = query.getSingleResult();
+            
+            if (result instanceof Integer) {
+                int returnValue = (Integer) result;
+                if (returnValue == 0) {
+                    // 存储过程执行成功
+                    logUtil.logDebug("游戏上架申请存储过程执行成功 - 账号: " + account + ", 游戏名: " + gameName);
+                }
+                return returnValue;
+            } else if (result instanceof Number) {
+                int returnValue = ((Number) result).intValue();
+                if (returnValue == 0) {
+                    // 存储过程执行成功
+                    logUtil.logDebug("游戏上架申请存储过程执行成功 - 账号: " + account + ", 游戏名: " + gameName);
+                }
+                return returnValue;
+            } else {
+                // 如果返回值不是数字类型，返回错误代码
+                return -99;
+            }
+        } catch (Exception e) {
+            // 捕获存储过程执行异常
+            logUtil.logError("游戏上架申请存储过程执行异常 - 账号: " + account + ", 游戏名: " + gameName, e);
+            return -99;
+        }
+    }
+
+    /**
+     * 游戏下架（调用存储过程）
+     */
+    @Transactional
+    public int offShelfGame(String account, String gameName) {
+        try {
+            // 调用存储过程 sp_off_shelf_game
+            Query query = entityManager.createNativeQuery("{call sp_off_shelf_game(?, ?)}");
+            
+            // 设置存储过程参数
+            query.setParameter(1, account);
+            query.setParameter(2, gameName);
+            
+            // 执行存储过程并获取返回值
+            Object result = query.getSingleResult();
+            
+            if (result instanceof Integer) {
+                int returnValue = (Integer) result;
+                if (returnValue == 0) {
+                    // 存储过程执行成功
+                    logUtil.logDebug("游戏下架存储过程执行成功 - 账号: " + account + ", 游戏名: " + gameName);
+                }
+                return returnValue;
+            } else if (result instanceof Number) {
+                int returnValue = ((Number) result).intValue();
+                if (returnValue == 0) {
+                    // 存储过程执行成功
+                    logUtil.logDebug("游戏下架存储过程执行成功 - 账号: " + account + ", 游戏名: " + gameName);
+                }
+                return returnValue;
+            } else {
+                // 如果返回值不是数字类型，返回错误代码
+                return -99;
+            }
+        } catch (Exception e) {
+            // 捕获存储过程执行异常
+            logUtil.logError("游戏下架存储过程执行异常 - 账号: " + account + ", 游戏名: " + gameName, e);
+            return -99;
+        }
+    }
+
+    /**
+     * 查询游戏上架申请（调用存储过程）
+     */
+    @Transactional(readOnly = true)
+    public Object queryGameApplications(String account, String approvalStatus) {
+        try {
+            // 调用存储过程 sp_query_applications_by_status
+            Query query = entityManager.createNativeQuery("{call sp_query_applications_by_status(?, ?)}");
+            
+            // 设置存储过程参数
+            query.setParameter(1, account);
+            query.setParameter(2, approvalStatus);
+            
+            // 执行存储过程并获取结果列表
+            List<?> resultList = query.getResultList();
+            
+            if (resultList.isEmpty()) {
+                // 没有查询到结果，返回空列表
+                return java.util.Collections.emptyList();
+            }
+            
+            // 返回查询结果
+            return resultList;
+        } catch (Exception e) {
+            // 捕获存储过程执行异常
+            logUtil.logError("游戏上架申请查询存储过程执行异常 - 账号: " + account, e);
+            return -99;
+        }
+    }
+
+    /**
+     * 取消游戏上架申请（调用存储过程）
+     */
+    @Transactional
+    public int cancelGameApplication(String account, Integer applicationId) {
+        try {
+            // 调用存储过程 sp_cancel_game_application
+            Query query = entityManager.createNativeQuery("{call sp_cancel_game_application(?, ?)}");
+            
+            // 设置存储过程参数
+            query.setParameter(1, account);
+            query.setParameter(2, applicationId);
+            
+            // 执行存储过程并获取返回值
+            Object result = query.getSingleResult();
+            
+            if (result instanceof Integer) {
+                int returnValue = (Integer) result;
+                if (returnValue == 0) {
+                    // 存储过程执行成功
+                    logUtil.logDebug("取消游戏上架申请存储过程执行成功 - 账号: " + account + ", 申请编号: " + applicationId);
+                }
+                return returnValue;
+            } else if (result instanceof Number) {
+                int returnValue = ((Number) result).intValue();
+                if (returnValue == 0) {
+                    // 存储过程执行成功
+                    logUtil.logDebug("取消游戏上架申请存储过程执行成功 - 账号: " + account + ", 申请编号: " + applicationId);
+                }
+                return returnValue;
+            } else {
+                // 如果返回值不是数字类型，返回错误代码
+                return -99;
+            }
+        } catch (Exception e) {
+            // 捕获存储过程执行异常
+            logUtil.logError("取消游戏上架申请存储过程执行异常 - 账号: " + account + ", 申请编号: " + applicationId, e);
+            return -99;
+        }
+    }
+
 }
