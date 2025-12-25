@@ -8,6 +8,7 @@ import com.database.gametrade.repository.VendorInfoRepository;
 import com.database.gametrade.service.UserService;
 import com.database.gametrade.util.LogUtil;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
@@ -17,6 +18,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
 import java.util.Map;
 import java.util.Optional;
 
@@ -225,6 +227,168 @@ public class UserController {
     }
 
     /**
+     * 游戏创建（厂商）
+     * POST /api/users/create-game
+     */
+    @PostMapping("/create-game")
+    public ResponseEntity<?> createGame(@Valid @RequestBody GameCreateRequest createRequest) {
+        logUtil.logDebug("创建游戏 - 账号: " + createRequest.getAccount() + ", 游戏名: " + createRequest.getGameName());
+
+        int result = userService.createGame(
+                createRequest.getAccount(),
+                createRequest.getGameName(),
+                createRequest.getCategory(),
+                createRequest.getPrice(),
+                createRequest.getDescription(),
+                createRequest.getDownloadLink(),
+                createRequest.getLicenseNumber()
+        );
+
+        switch (result) {
+            case 0:
+                logUtil.logDebug("游戏创建成功 - 账号: " + createRequest.getAccount() + ", 游戏名: " + createRequest.getGameName());
+                return ResponseEntity.ok().body("游戏创建成功");
+            case -1:
+                logUtil.logWarning("游戏创建失败 - 厂商账号不存在: " + createRequest.getAccount());
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body("厂商账号不存在或不是供应商角色");
+            case -2:
+                logUtil.logWarning("游戏创建失败 - 游戏名已存在: " + createRequest.getGameName());
+                return ResponseEntity.status(HttpStatus.CONFLICT).body("游戏名已存在");
+            case -3:
+                logUtil.logWarning("游戏创建失败 - 版号已存在: " + createRequest.getLicenseNumber());
+                return ResponseEntity.status(HttpStatus.CONFLICT).body("版号已存在");
+            case -4:
+                logUtil.logWarning("游戏创建失败 - 价格不能为负数: " + createRequest.getPrice());
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("价格不能为负数");
+            default:
+                logUtil.logWarning("游戏创建失败 - 未知错误: " + result);
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("游戏创建失败，请稍后重试");
+        }
+    }
+
+    /**
+     * 厂商拥有游戏查询
+     * POST /api/users/query-vendor-games
+     */
+    @PostMapping("/query-vendor-games")
+    public ResponseEntity<?> queryVendorGames(@Valid @RequestBody VendorGameQueryRequest queryRequest) {
+        logUtil.logDebug("查询厂商游戏 - 账号: " + queryRequest.getAccount());
+
+        Object result = userService.queryVendorGames(queryRequest.getAccount());
+        
+        if (result instanceof Integer) {
+            int returnValue = (Integer) result;
+            switch (returnValue) {
+                case -1:
+                    logUtil.logWarning("厂商游戏查询失败 - 厂商账号不存在: " + queryRequest.getAccount());
+                    return ResponseEntity.status(HttpStatus.NOT_FOUND).body("厂商账号不存在或不是供应商角色");
+                case -99:
+                    logUtil.logError("厂商游戏查询失败 - 存储过程执行异常", null);
+                    return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("查询失败，请稍后重试");
+                default:
+                    logUtil.logWarning("厂商游戏查询失败 - 未知错误: " + returnValue);
+                    return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("查询失败，请稍后重试");
+            }
+        } else {
+            // 返回查询结果
+            logUtil.logDebug("厂商游戏查询成功 - 账号: " + queryRequest.getAccount());
+            return ResponseEntity.ok(result);
+        }
+    }
+
+    /**
+     * 游戏具体信息查询
+     * POST /api/users/query-game-info
+     */
+    @PostMapping("/query-game-info")
+    public ResponseEntity<?> queryGameInfo(@Valid @RequestBody GameInfoQueryRequest queryRequest) {
+        logUtil.logDebug("查询游戏信息 - 游戏名: " + queryRequest.getGameName());
+
+        Object result = userService.queryGameInfo(queryRequest.getGameName());
+        
+        if (result instanceof Integer) {
+            int returnValue = (Integer) result;
+            switch (returnValue) {
+                case -1:
+                    logUtil.logWarning("游戏信息查询失败 - 游戏不存在: " + queryRequest.getGameName());
+                    return ResponseEntity.status(HttpStatus.NOT_FOUND).body("游戏不存在");
+                case -99:
+                    logUtil.logError("游戏信息查询失败 - 存储过程执行异常", null);
+                    return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("查询失败，请稍后重试");
+                default:
+                    logUtil.logWarning("游戏信息查询失败 - 未知错误: " + returnValue);
+                    return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("查询失败，请稍后重试");
+            }
+        } else {
+            // 返回查询结果
+            logUtil.logDebug("游戏信息查询成功 - 游戏名: " + queryRequest.getGameName());
+            return ResponseEntity.ok(result);
+        }
+    }
+
+    /**
+     * 游戏信息模糊查询
+     * POST /api/users/query-game-info-fuzzy
+     */
+    @PostMapping("/query-game-info-fuzzy")
+    public ResponseEntity<?> queryGameInfoFuzzy(@Valid @RequestBody GameInfoFuzzyQueryRequest queryRequest) {
+        logUtil.logDebug("模糊查询游戏信息 - 关键词: " + queryRequest.getKeyword());
+
+        Object result = userService.queryGameInfoFuzzy(queryRequest.getKeyword());
+        
+        if (result == null || (result instanceof java.util.List && ((java.util.List<?>) result).isEmpty())) {
+            logUtil.logDebug("模糊查询游戏信息 - 未找到匹配的游戏: " + queryRequest.getKeyword());
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("未找到匹配的游戏");
+        } else {
+            // 返回查询结果
+            logUtil.logDebug("模糊查询游戏信息成功 - 关键词: " + queryRequest.getKeyword());
+            return ResponseEntity.ok(result);
+        }
+    }
+
+    /**
+     * 游戏信息修改（厂商）
+     * PUT /api/users/update-game
+     */
+    @PutMapping("/update-game")
+    public ResponseEntity<?> updateGame(@Valid @RequestBody GameUpdateRequest updateRequest) {
+        logUtil.logDebug("修改游戏信息 - 账号: " + updateRequest.getAccount() + ", 游戏名: " + updateRequest.getGameName());
+
+        int result = userService.updateGameInfo(
+                updateRequest.getAccount(),
+                updateRequest.getGameName(),
+                updateRequest.getPrice(),
+                updateRequest.getDescription(),
+                updateRequest.getLicenseNumber(),
+                updateRequest.getDownloadLink()
+        );
+
+        switch (result) {
+            case 0:
+                logUtil.logDebug("游戏信息修改成功 - 账号: " + updateRequest.getAccount() + ", 游戏名: " + updateRequest.getGameName());
+                return ResponseEntity.ok().body("游戏信息修改成功");
+            case -1:
+                logUtil.logWarning("游戏信息修改失败 - 厂商账号不存在: " + updateRequest.getAccount());
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body("厂商账号不存在或不是供应商角色");
+            case -2:
+                logUtil.logWarning("游戏信息修改失败 - 游戏不存在或不属于该厂商: " + updateRequest.getGameName());
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body("游戏不存在或不属于该厂商");
+            case -3:
+                logUtil.logWarning("游戏信息修改失败 - 至少需要提供一个要修改的字段");
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("至少需要提供一个要修改的字段");
+            case -4:
+                logUtil.logWarning("游戏信息修改失败 - 价格不能为负数: " + updateRequest.getPrice());
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("价格不能为负数");
+            case -5:
+                logUtil.logWarning("游戏信息修改失败 - 版号已存在: " + updateRequest.getLicenseNumber());
+                return ResponseEntity.status(HttpStatus.CONFLICT).body("版号已存在");
+            default:
+                logUtil.logWarning("游戏信息修改失败 - 未知错误: " + result);
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("游戏信息修改失败，请稍后重试");
+        }
+    }
+
+    /**
      * 买家注册请求DTO
      */
     @Setter
@@ -320,5 +484,84 @@ public class UserController {
             this.contact = contact;
             this.registerTime = registerTime != null ? registerTime.toString() : null;
         }
+    }
+
+    @Setter
+    @Getter
+    public static class GameCreateRequest {
+        @NotBlank(message = "账号不能为空")
+        @Size(max = 50, message = "账号长度不能超过50个字符")
+        private String account;
+
+        @NotBlank(message = "游戏名不能为空")
+        @Size(max = 100, message = "游戏名长度不能超过100个字符")
+        private String gameName;
+
+        @NotBlank(message = "游戏类别不能为空")
+        @Size(max = 50, message = "游戏类别长度不能超过50个字符")
+        private String category;
+
+        @DecimalMin(value = "0.0", message = "价格不能为负数")
+        private BigDecimal price;
+
+        @NotBlank(message = "游戏简介不能为空")
+        @Size(max = 500, message = "游戏简介长度不能超过500个字符")
+        private String description;
+
+        @NotBlank(message = "下载链接不能为空")
+        @Size(max = 255, message = "下载链接长度不能超过255个字符")
+        private String downloadLink;
+
+        @NotBlank(message = "版号不能为空")
+        @Size(max = 50, message = "版号长度不能超过50个字符")
+        private String licenseNumber;
+    }
+
+    @Setter
+    @Getter
+    public static class VendorGameQueryRequest {
+        @NotBlank(message = "厂商账号不能为空")
+        @Size(max = 50, message = "厂商账号长度不能超过50个字符")
+        private String account;
+    }
+
+    @Setter
+    @Getter
+    public static class GameInfoQueryRequest {
+        @NotBlank(message = "游戏名不能为空")
+        @Size(max = 100, message = "游戏名长度不能超过100个字符")
+        private String gameName;
+    }
+
+    @Setter
+    @Getter
+    public static class GameInfoFuzzyQueryRequest {
+        @NotBlank(message = "游戏名关键词不能为空")
+        @Size(max = 100, message = "游戏名关键词长度不能超过100个字符")
+        private String keyword;
+    }
+
+    @Setter
+    @Getter
+    public static class GameUpdateRequest {
+        @NotBlank(message = "厂商账号不能为空")
+        @Size(max = 50, message = "厂商账号长度不能超过50个字符")
+        private String account;
+
+        @NotBlank(message = "游戏名不能为空")
+        @Size(max = 100, message = "游戏名长度不能超过100个字符")
+        private String gameName;
+
+        @DecimalMin(value = "0.0", message = "价格不能为负数")
+        private BigDecimal price;
+
+        @Size(max = 500, message = "游戏简介长度不能超过500个字符")
+        private String description;
+
+        @Size(max = 50, message = "版号长度不能超过50个字符")
+        private String licenseNumber;
+
+        @Size(max = 255, message = "下载链接长度不能超过255个字符")
+        private String downloadLink;
     }
 }

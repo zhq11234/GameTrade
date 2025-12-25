@@ -4,7 +4,8 @@ CREATE PROCEDURE sp_update_game_info
     @game_name VARCHAR(100),
     @price DECIMAL(10,2) = NULL,
     @description VARCHAR(500) = NULL,
-    @license_number VARCHAR(50) = NULL
+    @license_number VARCHAR(50) = NULL,
+    @download_link VARCHAR(255) = NULL
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -36,7 +37,7 @@ RETURN -2;
 END
 
         -- 检查是否至少提供了一个要修改的字段
-        IF @price IS NULL AND @description IS NULL AND @license_number IS NULL
+        IF @price IS NULL AND @description IS NULL AND @license_number IS NULL AND @download_link IS NULL
 BEGIN
             RAISERROR('至少需要提供一个要修改的字段', 16, 1);
 ROLLBACK TRANSACTION;
@@ -66,7 +67,8 @@ END
 UPDATE game_info
 SET price = ISNULL(@price, price),
     description = ISNULL(@description, description),
-    license_number = ISNULL(@license_number, license_number)
+    license_number = ISNULL(@license_number, license_number),
+    download_link = ISNULL(@download_link, download_link)
 WHERE game_name = @game_name AND company_name = @company_name;
 
 PRINT '游戏信息修改成功';

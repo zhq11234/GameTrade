@@ -142,18 +142,11 @@ SELECT
     gi.sales_volume AS SalesVolume,
     gi.company_name AS CompanyName,
     -- 计算热度（销量×评分，评分为空时使用默认值5.0）
-    CASE
-        WHEN gi.score IS NOT NULL THEN gi.sales_volume * CAST(gi.score AS DECIMAL(4,2))
-        ELSE gi.sales_volume * 5.0
-        END AS Popularity
+    IIF(gi.score IS NOT NULL, gi.sales_volume * CAST(gi.score AS DECIMAL(4, 2)), gi.sales_volume * 5.0) AS Popularity
 FROM game_info gi
 WHERE gi.category = @FinalPreference
   AND gi.status = '上架'  -- 只查询上架的游戏
-ORDER BY
-    CASE
-        WHEN gi.score IS NOT NULL THEN gi.sales_volume * CAST(gi.score AS DECIMAL(4,2))
-        ELSE gi.sales_volume * 5.0
-        END DESC;
+ORDER BY IIF(gi.score IS NOT NULL, gi.sales_volume * CAST(gi.score AS DECIMAL(4, 2)), gi.sales_volume * 5.0) DESC;
 
 -- 返回偏好分析结果（可选）
 SELECT
@@ -426,7 +419,7 @@ SELECT DISTINCT
     d.license_number AS old_version,
     i.license_number AS new_version,
     '亲爱的 ' + bgi.nickname + '，您拥有的游戏 "' + i.game_name +
-    '" 有新版本发布！当前版本: ' + COALESCE(d.license_number, '未知') +
+    '" 有新版本发布！当前版本: ' + d.license_number +
     ' → 新版本: ' + i.license_number +
     '。请及时更新以获得更好的游戏体验。' AS reminder_message
 FROM inserted i
@@ -434,7 +427,6 @@ FROM inserted i
          INNER JOIN buyer_game_info bgi ON i.game_name = bgi.game_name
 -- 只有当新版号比旧版号"更高"时才发送提醒
 WHERE i.license_number > d.license_number
-   OR d.license_number IS NULL;  -- 如果之前没有版号，现在有了也提醒
 
 -- 可选：记录到系统日志
 PRINT '检测到游戏版号更新，已为相关买家创建更新提醒';
@@ -487,15 +479,13 @@ BEGIN
                                RIGHT('00000' + CAST(ABS(CHECKSUM(NEWID())) % 100000 AS NVARCHAR(5)), 5);
 END
 
-        -- 获取游戏信息
-        DECLARE @Category NVARCHAR(50);
-        DECLARE @Price DECIMAL(10,2);
-        DECLARE @LicenseNumber NVARCHAR(50);
+	-- 获取游戏信息
+	DECLARE @Category NVARCHAR(50);
+	DECLARE @Price DECIMAL(10,2);
 
 SELECT
     @Category = category,
-    @Price = price,
-    @LicenseNumber = license_number
+    @Price = price
 FROM game_info
 WHERE game_name = @GameName;
 
@@ -518,8 +508,7 @@ VALUES (
            @Price,
            GETDATE(),  -- 订单时间为系统时间
            NULL,       -- 支付时间默认为空
-           '待支付',   -- 订单状态初始为待支付
-           @LicenseNumber
+           '待支付'   -- 订单状态初始为待支付
        );
 
 -- 返回生成的订单信息
@@ -657,7 +646,7 @@ INSERT INTO buyer_game_info (
 SELECT
     i.nickname,
     i.game_name,
-
+    NULL,
     NULL,  -- 评分初始为空
     NULL,  -- 评论初始为空
     NULL   -- 评价时间初始为空

@@ -3,17 +3,25 @@ package com.database.gametrade.service;
 import com.database.gametrade.dto.BuyerInfoDTO;
 import com.database.gametrade.dto.VendorInfoDTO;
 import com.database.gametrade.entity.BuyerInfo;
+import com.database.gametrade.entity.GameInfo;
 import com.database.gametrade.entity.UserInfo;
 import com.database.gametrade.entity.VendorInfo;
 import com.database.gametrade.repository.BuyerInfoRepository;
 import com.database.gametrade.repository.UserInfoRepository;
 import com.database.gametrade.repository.VendorInfoRepository;
+import com.database.gametrade.util.LogUtil;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
+import jakarta.persistence.Query;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -28,6 +36,12 @@ public class UserService {
 
     @Autowired
     private VendorInfoRepository vendorInfoRepository;
+
+    @Autowired
+    private LogUtil logUtil;
+
+    @PersistenceContext
+    private EntityManager entityManager;
 
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
@@ -310,6 +324,193 @@ public class UserService {
         }
 
         return false;
+    }
+
+    /**
+     * 创建游戏（调用存储过程）
+     */
+    @Transactional
+    public int createGame(String account, String gameName, String category, BigDecimal price,
+                         String description, String downloadLink, String licenseNumber) {
+        try {
+            // 调用存储过程 sp_create_game
+            Query query = entityManager.createNativeQuery("{call sp_create_game(?, ?, ?, ?, ?, ?, ?)}");
+            
+            // 设置存储过程参数
+            query.setParameter(1, account);
+            query.setParameter(2, gameName);
+            query.setParameter(3, category);
+            query.setParameter(4, price);
+            query.setParameter(5, description);
+            query.setParameter(6, downloadLink);
+            query.setParameter(7, licenseNumber);
+            
+            // 执行存储过程并获取返回值
+            Object result = query.getSingleResult();
+            
+            if (result instanceof Integer) {
+                int returnValue = (Integer) result;
+                if (returnValue == 0) {
+                    // 存储过程执行成功
+                    logUtil.logDebug("游戏创建存储过程执行成功 - 账号: " + account + ", 游戏名: " + gameName);
+                }
+                return returnValue;
+            } else if (result instanceof Number) {
+                int returnValue = ((Number) result).intValue();
+                if (returnValue == 0) {
+                    // 存储过程执行成功
+                    logUtil.logDebug("游戏创建存储过程执行成功 - 账号: " + account + ", 游戏名: " + gameName);
+                }
+                return returnValue;
+            } else {
+                // 如果返回值不是数字类型，返回错误代码
+                return -99;
+            }
+        } catch (Exception e) {
+            // 捕获存储过程执行异常
+            logUtil.logError("存储过程执行异常 - 账号: " + account + ", 游戏名: " + gameName, e);
+            return -99;
+        }
+    }
+
+    /**
+     * 厂商拥有游戏查询（调用存储过程）
+     */
+    @Transactional(readOnly = true)
+    public Object queryVendorGames(String account) {
+        try {
+            // 调用存储过程 sp_query_vendor_games
+            Query query = entityManager.createNativeQuery("{call sp_query_vendor_games(?)}");
+            
+            // 设置存储过程参数
+            query.setParameter(1, account);
+            
+            // 执行存储过程并获取结果列表
+            List<?> resultList = query.getResultList();
+            
+            if (resultList.isEmpty()) {
+                // 没有查询到结果，返回空列表
+                return java.util.Collections.emptyList();
+            }
+            
+            // 返回查询结果
+            return resultList;
+        } catch (Exception e) {
+            // 捕获存储过程执行异常
+            logUtil.logError("厂商游戏查询存储过程执行异常 - 账号: " + account, e);
+            return -99;
+        }
+    }
+
+    /**
+     * 游戏具体信息查询（调用存储过程）
+     */
+    @Transactional(readOnly = true)
+    public Object queryGameInfo(String gameName) {
+        try {
+            // 调用存储过程 sp_query_game_info
+            Query query = entityManager.createNativeQuery("{call sp_query_game_info(?)}");
+            
+            // 设置存储过程参数
+            query.setParameter(1, gameName);
+            
+            // 执行存储过程并获取结果
+            List<?> resultList = query.getResultList();
+            
+            if (resultList.isEmpty()) {
+                // 游戏不存在
+                return -1;
+            }
+            
+            // 返回查询结果（第一条记录）
+            return resultList.get(0);
+        } catch (Exception e) {
+            // 捕获存储过程执行异常
+            logUtil.logError("游戏信息查询存储过程执行异常 - 游戏名: " + gameName, e);
+            return -99;
+        }
+    }
+
+    /**
+     * 游戏信息模糊查询
+     */
+    @Transactional(readOnly = true)
+    public Object queryGameInfoFuzzy(String keyword) {
+        try {
+            // 使用JPA查询实现模糊查询
+            String jpql = "SELECT g FROM GameInfo g WHERE g.gameName LIKE :keyword ORDER BY g.gameName";
+            List<GameInfo> resultList = entityManager.createQuery(jpql, GameInfo.class)
+                    .setParameter("keyword", "%" + keyword + "%")
+                    .getResultList();
+            
+            // 转换为Map列表返回
+            List<Map<String, Object>> result = new ArrayList<>();
+            for (GameInfo game : resultList) {
+                Map<String, Object> gameMap = new HashMap<>();
+                gameMap.put("游戏名", game.getGameName());
+                gameMap.put("游戏类别", game.getCategory());
+                gameMap.put("价格", game.getPrice());
+                gameMap.put("企业名", game.getCompanyName());
+                gameMap.put("上线时间", game.getReleaseTime());
+                gameMap.put("游戏简介", game.getDescription());
+                gameMap.put("状态", game.getStatus());
+                gameMap.put("下载链接", game.getDownloadLink());
+                gameMap.put("版号", game.getLicenseNumber());
+                result.add(gameMap);
+            }
+            
+            return result;
+        } catch (Exception e) {
+            // 捕获查询异常
+            logUtil.logError("游戏信息模糊查询异常 - 关键词: " + keyword, e);
+            return null;
+        }
+    }
+
+    /**
+     * 游戏信息修改（调用存储过程）
+     */
+    @Transactional
+    public int updateGameInfo(String account, String gameName, BigDecimal price,
+                             String description, String licenseNumber, String downloadLink) {
+        try {
+            // 调用存储过程 sp_update_game_info
+            Query query = entityManager.createNativeQuery("{call sp_update_game_info(?, ?, ?, ?, ?, ?)}");
+            
+            // 设置存储过程参数
+            query.setParameter(1, account);
+            query.setParameter(2, gameName);
+            query.setParameter(3, price);
+            query.setParameter(4, description);
+            query.setParameter(5, licenseNumber);
+            query.setParameter(6, downloadLink);
+            
+            // 执行存储过程并获取返回值
+            Object result = query.getSingleResult();
+            
+            if (result instanceof Integer) {
+                int returnValue = (Integer) result;
+                if (returnValue == 0) {
+                    // 存储过程执行成功
+                    logUtil.logDebug("游戏信息修改存储过程执行成功 - 账号: " + account + ", 游戏名: " + gameName);
+                }
+                return returnValue;
+            } else if (result instanceof Number) {
+                int returnValue = ((Number) result).intValue();
+                if (returnValue == 0) {
+                    // 存储过程执行成功
+                    logUtil.logDebug("游戏信息修改存储过程执行成功 - 账号: " + account + ", 游戏名: " + gameName);
+                }
+                return returnValue;
+            } else {
+                // 如果返回值不是数字类型，返回错误代码
+                return -99;
+            }
+        } catch (Exception e) {
+            // 捕获存储过程执行异常
+            logUtil.logError("游戏信息修改存储过程执行异常 - 账号: " + account + ", 游戏名: " + gameName, e);
+            return -99;
+        }
     }
 
 }

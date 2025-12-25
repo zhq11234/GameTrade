@@ -45,7 +45,7 @@ public class GameInfo {
     @Size(max = 20, message = "状态长度不能超过20个字符")
     private String status = "下架";
 
-    @Column(name = "download_link", length = 255, nullable = false)
+    @Column(name = "download_link", nullable = false)
     @NotBlank(message = "下载链接不能为空")
     @Size(max = 255, message = "下载链接长度不能超过255个字符")
     private String downloadLink;
