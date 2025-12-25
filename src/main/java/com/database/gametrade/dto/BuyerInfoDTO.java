@@ -6,16 +6,16 @@ public class BuyerInfoDTO {
     private String nickname;
     private String account;
     private String gender;
-    private LocalDate birthdate;
+    private LocalDate birthday;
     private String contact;
 
     public BuyerInfoDTO() {}
 
-    public BuyerInfoDTO(String nickname, String account, String gender, LocalDate birthdate, String contact) {
+    public BuyerInfoDTO(String nickname, String account, String gender, LocalDate birthday, String contact) {
         this.nickname = nickname;
         this.account = account;
         this.gender = gender;
-        this.birthdate = birthdate;
+        this.birthday = birthday;
         this.contact = contact;
     }
 
@@ -44,12 +44,12 @@ public class BuyerInfoDTO {
         this.gender = gender;
     }
 
-    public LocalDate getBirthdate() {
-        return birthdate;
+    public LocalDate getBirthday() {
+        return birthday;
     }
 
-    public void setBirthdate(LocalDate birthdate) {
-        this.birthdate = birthdate;
+    public void setBirthday(LocalDate birthday) {
+        this.birthday = birthday;
     }
 
     public String getContact() {
@@ -66,7 +66,7 @@ public class BuyerInfoDTO {
                 "nickname='" + nickname + '\'' +
                 ", account='" + account + '\'' +
                 ", gender='" + gender + '\'' +
-                ", birthdate=" + birthdate +
+                ", birthday=" + birthday +
                 ", contact='" + contact + '\'' +
                 '}';
     }

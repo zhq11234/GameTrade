@@ -1,5 +1,7 @@
 package com.database.gametrade.service;
 
+import com.database.gametrade.dto.BuyerInfoDTO;
+import com.database.gametrade.dto.VendorInfoDTO;
 import com.database.gametrade.entity.BuyerInfo;
 import com.database.gametrade.entity.UserInfo;
 import com.database.gametrade.entity.VendorInfo;
@@ -190,7 +192,7 @@ public class UserService {
             Optional<BuyerInfo> buyerInfo = buyerInfoRepository.findByAccount(account);
             if (buyerInfo.isPresent()) {
                 BuyerInfo buyer = buyerInfo.get();
-                return new com.database.gametrade.dto.BuyerInfoDTO(
+                return new BuyerInfoDTO(
                         buyer.getNickname(),
                         buyer.getAccount(),
                         buyer.getGender(),
@@ -202,7 +204,7 @@ public class UserService {
             Optional<VendorInfo> vendorInfo = vendorInfoRepository.findByAccount(account);
             if (vendorInfo.isPresent()) {
                 VendorInfo vendor = vendorInfo.get();
-                return new com.database.gametrade.dto.VendorInfoDTO(
+                return new VendorInfoDTO(
                         vendor.getCompanyName(),
                         vendor.getAccount(),
                         vendor.getRegisteredAddress(),
@@ -219,7 +221,7 @@ public class UserService {
      * 修改用户个人信息
      */
     @Transactional
-    public boolean updatePersonalInfo(String account, Map<String, Object> personalInfo) {
+    public boolean updatePersonalInfo(String account, Object personalInfo) {
         // 首先获取用户基本信息
         Optional<UserInfo> userOptional = userInfoRepository.findByAccount(account);
         if (userOptional.isEmpty()) {
@@ -234,16 +236,38 @@ public class UserService {
             Optional<BuyerInfo> buyerInfoOptional = buyerInfoRepository.findByAccount(account);
             if (buyerInfoOptional.isPresent()) {
                 BuyerInfo buyerInfo = buyerInfoOptional.get();
-
-                // 更新买家信息
-                if (personalInfo.containsKey("nickname")) {
-                    buyerInfo.setNickname((String) personalInfo.get("nickname"));
-                }
-                if (personalInfo.containsKey("gender")) {
-                    buyerInfo.setGender((String) personalInfo.get("gender"));
-                }
-                if (personalInfo.containsKey("birthdate")) {
-                    buyerInfo.setBirthdate((java.time.LocalDate) personalInfo.get("birthdate"));
+                
+                // 将Object转换为BuyerInfoDTO
+                if (personalInfo instanceof Map) {
+                    // 兼容旧版本Map格式
+                    Map<String, Object> personalInfoMap = (Map<String, Object>) personalInfo;
+                    // 注意：nickname是主键，不允许修改，所以跳过nickname字段
+                    if (personalInfoMap.containsKey("gender")) {
+                        buyerInfo.setGender((String) personalInfoMap.get("gender"));
+                    }
+                    if (personalInfoMap.containsKey("birthday")) {
+                        Object birthdayObj = personalInfoMap.get("birthday");
+                        if (birthdayObj instanceof String) {
+                            // 处理字符串格式的日期
+                            try {
+                                buyerInfo.setBirthdate(java.time.LocalDate.parse((String) birthdayObj));
+                            } catch (Exception e) {
+                                // 日期格式错误，使用默认值
+                                buyerInfo.setBirthdate(java.time.LocalDate.of(2000, 1, 1));
+                            }
+                        } else if (birthdayObj instanceof java.time.LocalDate) {
+                            buyerInfo.setBirthdate((java.time.LocalDate) birthdayObj);
+                        }
+                    }
+                } else if (personalInfo instanceof BuyerInfoDTO buyerInfoDTO) {
+                    // 使用DTO格式
+                    // 注意：nickname是主键，不允许修改，所以跳过nickname字段
+                    if (buyerInfoDTO.getGender() != null) {
+                        buyerInfo.setGender(buyerInfoDTO.getGender());
+                    }
+                    if (buyerInfoDTO.getBirthday() != null) {
+                        buyerInfo.setBirthdate(buyerInfoDTO.getBirthday());
+                    }
                 }
 
                 buyerInfoRepository.save(buyerInfo);
@@ -253,16 +277,32 @@ public class UserService {
             Optional<VendorInfo> vendorInfoOptional = vendorInfoRepository.findByAccount(account);
             if (vendorInfoOptional.isPresent()) {
                 VendorInfo vendorInfo = vendorInfoOptional.get();
-
-                // 更新厂商信息
-                if (personalInfo.containsKey("companyName")) {
-                    vendorInfo.setCompanyName((String) personalInfo.get("companyName"));
-                }
-                if (personalInfo.containsKey("registeredAddress")) {
-                    vendorInfo.setRegisteredAddress((String) personalInfo.get("registeredAddress"));
-                }
-                if (personalInfo.containsKey("contactPerson")) {
-                    vendorInfo.setContactPerson((String) personalInfo.get("contactPerson"));
+                
+                // 将Object转换为VendorInfoDTO
+                if (personalInfo instanceof Map) {
+                    // 兼容旧版本Map格式
+                    Map<String, Object> personalInfoMap = (Map<String, Object>) personalInfo;
+                    if (personalInfoMap.containsKey("companyName")) {
+                        vendorInfo.setCompanyName((String) personalInfoMap.get("companyName"));
+                    }
+                    if (personalInfoMap.containsKey("registeredAddress")) {
+                        vendorInfo.setRegisteredAddress((String) personalInfoMap.get("registeredAddress"));
+                    }
+                    if (personalInfoMap.containsKey("contactPerson")) {
+                        vendorInfo.setContactPerson((String) personalInfoMap.get("contactPerson"));
+                    }
+                } else if (personalInfo instanceof VendorInfoDTO) {
+                    // 使用DTO格式
+                    VendorInfoDTO vendorInfoDTO = (VendorInfoDTO) personalInfo;
+                    if (vendorInfoDTO.getCompanyName() != null) {
+                        vendorInfo.setCompanyName(vendorInfoDTO.getCompanyName());
+                    }
+                    if (vendorInfoDTO.getRegisteredAddress() != null) {
+                        vendorInfo.setRegisteredAddress(vendorInfoDTO.getRegisteredAddress());
+                    }
+                    if (vendorInfoDTO.getContactPerson() != null) {
+                        vendorInfo.setContactPerson(vendorInfoDTO.getContactPerson());
+                    }
                 }
 
                 vendorInfoRepository.save(vendorInfo);

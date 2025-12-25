@@ -211,7 +211,7 @@ public class UserController {
      * 修改用户个人信息
      */
     @PutMapping("/personal-info")
-    public ResponseEntity<?> updatePersonalInfo(@RequestParam String account, @RequestBody Map<String, Object> personalInfo) {
+    public ResponseEntity<?> updatePersonalInfo(@RequestParam String account, @RequestBody Object personalInfo) {
         logUtil.logDebug("修改个人信息 - 账号: " + account);
 
         boolean success = userService.updatePersonalInfo(account, personalInfo);
