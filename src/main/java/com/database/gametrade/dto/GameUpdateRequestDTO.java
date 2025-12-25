@@ -30,4 +30,7 @@ public class GameUpdateRequestDTO {
 
     @Size(max = 255, message = "下载链接长度不能超过255个字符")
     private String downloadLink;
+
+    @Size(max=50, message = "游戏类别长度不能超过50个字符")
+    private String category;
 }

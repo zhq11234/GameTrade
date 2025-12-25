@@ -98,17 +98,29 @@ public class VendorUserController {
      * PUT /api/vendors/personal-info
      */
     @PutMapping("/personal-info")
-    public ResponseEntity<?> updatePersonalInfo(@RequestParam String account, @RequestBody Object personalInfo) {
+    public ResponseEntity<?> updatePersonalInfo(@RequestParam String account, @Valid @RequestBody VendorInfoDTO personalInfo) {
         logUtil.logDebug("修改厂商个人信息 - 账号: " + account);
 
-        boolean success = vendorUserService.updateVendorPersonalInfo(account, personalInfo);
-        if (success) {
-            logUtil.logDebug("修改厂商个人信息成功 - 账号: " + account);
-            return ResponseEntity.ok().body("厂商个人信息修改成功");
-        } else {
-            logUtil.logWarning("修改厂商个人信息失败 - 账号不存在: " + account);
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("厂商不存在或修改失败");
-        }
+        int result = vendorUserService.updateVendorPersonalInfo(account, personalInfo);
+        
+        return switch (result) {
+            case 0 -> {
+                logUtil.logDebug("修改厂商个人信息成功 - 账号: " + account);
+                yield ResponseEntity.ok().body("厂商个人信息修改成功");
+            }
+            case -1 -> {
+                logUtil.logWarning("修改厂商个人信息失败 - 账号不存在: " + account);
+                yield ResponseEntity.status(HttpStatus.NOT_FOUND).body("厂商不存在");
+            }
+            case -2 -> {
+                logUtil.logWarning("修改厂商个人信息失败 - 联系方式已存在: " + account);
+                yield ResponseEntity.status(HttpStatus.CONFLICT).body("联系方式已存在");
+            }
+            default -> {
+                logUtil.logWarning("修改厂商个人信息失败 - 未知错误: " + result);
+                yield ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("修改失败，请稍后重试");
+            }
+        };
     }
 
     /**
@@ -129,26 +141,32 @@ public class VendorUserController {
                 createRequest.getLicenseNumber()
         );
 
-        switch (result) {
-            case 0:
+        return switch (result) {
+            case 0 -> {
                 logUtil.logDebug("游戏创建成功 - 账号: " + createRequest.getAccount() + ", 游戏名: " + createRequest.getGameName());
-                return ResponseEntity.ok().body("游戏创建成功");
-            case -1:
+                yield ResponseEntity.ok().body("游戏创建成功");
+            }
+            case -1 -> {
                 logUtil.logWarning("游戏创建失败 - 厂商账号不存在: " + createRequest.getAccount());
-                return ResponseEntity.status(HttpStatus.NOT_FOUND).body("厂商账号不存在或不是供应商角色");
-            case -2:
+                yield ResponseEntity.status(HttpStatus.NOT_FOUND).body("厂商账号不存在或不是供应商角色");
+            }
+            case -2 -> {
                 logUtil.logWarning("游戏创建失败 - 游戏名已存在: " + createRequest.getGameName());
-                return ResponseEntity.status(HttpStatus.CONFLICT).body("游戏名已存在");
-            case -3:
+                yield ResponseEntity.status(HttpStatus.CONFLICT).body("游戏名已存在");
+            }
+            case -3 -> {
                 logUtil.logWarning("游戏创建失败 - 版号已存在: " + createRequest.getLicenseNumber());
-                return ResponseEntity.status(HttpStatus.CONFLICT).body("版号已存在");
-            case -4:
+                yield ResponseEntity.status(HttpStatus.CONFLICT).body("版号已存在");
+            }
+            case -4 -> {
                 logUtil.logWarning("游戏创建失败 - 价格不能为负数: " + createRequest.getPrice());
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("价格不能为负数");
-            default:
+                yield ResponseEntity.status(HttpStatus.BAD_REQUEST).body("价格不能为负数");
+            }
+            default -> {
                 logUtil.logWarning("游戏创建失败 - 未知错误: " + result);
-                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("游戏创建失败，请稍后重试");
-        }
+                yield ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("游戏创建失败，请稍后重试");
+            }
+        };
     }
 
     /**
@@ -163,17 +181,20 @@ public class VendorUserController {
         
         if (result instanceof Integer) {
             int returnValue = (Integer) result;
-            switch (returnValue) {
-                case -1:
+            return switch (returnValue) {
+                case -1 -> {
                     logUtil.logWarning("厂商游戏查询失败 - 厂商账号不存在: " + queryRequest.getAccount());
-                    return ResponseEntity.status(HttpStatus.NOT_FOUND).body("厂商账号不存在或不是供应商角色");
-                case -99:
+                    yield ResponseEntity.status(HttpStatus.NOT_FOUND).body("厂商账号不存在或不是供应商角色");
+                }
+                case -99 -> {
                     logUtil.logError("厂商游戏查询失败 - 存储过程执行异常", null);
-                    return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("查询失败，请稍后重试");
-                default:
+                    yield ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("查询失败，请稍后重试");
+                }
+                default -> {
                     logUtil.logWarning("厂商游戏查询失败 - 未知错误: " + returnValue);
-                    return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("查询失败，请稍后重试");
-            }
+                    yield ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("查询失败，请稍后重试");
+                }
+            };
         } else {
             // 返回查询结果
             logUtil.logDebug("厂商游戏查询成功 - 账号: " + queryRequest.getAccount());
@@ -193,17 +214,20 @@ public class VendorUserController {
         
         if (result instanceof Integer) {
             int returnValue = (Integer) result;
-            switch (returnValue) {
-                case -1:
+            return switch (returnValue) {
+                case -1 -> {
                     logUtil.logWarning("游戏信息查询失败 - 游戏不存在: " + queryRequest.getGameName());
-                    return ResponseEntity.status(HttpStatus.NOT_FOUND).body("游戏不存在");
-                case -99:
+                    yield ResponseEntity.status(HttpStatus.NOT_FOUND).body("游戏不存在");
+                }
+                case -99 -> {
                     logUtil.logError("游戏信息查询失败 - 存储过程执行异常", null);
-                    return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("查询失败，请稍后重试");
-                default:
+                    yield ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("查询失败，请稍后重试");
+                }
+                default -> {
                     logUtil.logWarning("游戏信息查询失败 - 未知错误: " + returnValue);
-                    return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("查询失败，请稍后重试");
-            }
+                    yield ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("查询失败，请稍后重试");
+                }
+            };
         } else {
             // 返回查询结果
             logUtil.logDebug("游戏信息查询成功 - 游戏名: " + queryRequest.getGameName());
@@ -249,26 +273,32 @@ public class VendorUserController {
                 updateRequest.getLicenseNumber()
         );
 
-        switch (result) {
-            case 0:
+        return switch (result) {
+            case 0 -> {
                 logUtil.logDebug("游戏信息修改成功 - 账号: " + updateRequest.getAccount() + ", 游戏名: " + updateRequest.getGameName());
-                return ResponseEntity.ok().body("游戏信息修改成功");
-            case -1:
+                yield ResponseEntity.ok().body("游戏信息修改成功");
+            }
+            case -1 -> {
                 logUtil.logWarning("游戏信息修改失败 - 厂商账号不存在: " + updateRequest.getAccount());
-                return ResponseEntity.status(HttpStatus.NOT_FOUND).body("厂商账号不存在或不是供应商角色");
-            case -2:
+                yield ResponseEntity.status(HttpStatus.NOT_FOUND).body("厂商账号不存在或不是供应商角色");
+            }
+            case -2 -> {
                 logUtil.logWarning("游戏信息修改失败 - 游戏不存在或不属于该厂商: " + updateRequest.getGameName());
-                return ResponseEntity.status(HttpStatus.NOT_FOUND).body("游戏不存在或不属于该厂商");
-            case -3:
+                yield ResponseEntity.status(HttpStatus.NOT_FOUND).body("游戏不存在或不属于该厂商");
+            }
+            case -3 -> {
                 logUtil.logWarning("游戏信息修改失败 - 版号已存在: " + updateRequest.getLicenseNumber());
-                return ResponseEntity.status(HttpStatus.CONFLICT).body("版号已存在");
-            case -4:
+                yield ResponseEntity.status(HttpStatus.CONFLICT).body("版号已存在");
+            }
+            case -4 -> {
                 logUtil.logWarning("游戏信息修改失败 - 价格不能为负数: " + updateRequest.getPrice());
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("价格不能为负数");
-            default:
+                yield ResponseEntity.status(HttpStatus.BAD_REQUEST).body("价格不能为负数");
+            }
+            default -> {
                 logUtil.logWarning("游戏信息修改失败 - 未知错误: " + result);
-                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("游戏信息修改失败，请稍后重试");
-        }
+                yield ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("游戏信息修改失败，请稍后重试");
+            }
+        };
     }
 
     /**
@@ -284,26 +314,32 @@ public class VendorUserController {
                 applicationRequest.getGameName()
         );
 
-        switch (result) {
-            case 0:
+        return switch (result) {
+            case 0 -> {
                 logUtil.logDebug("游戏上架申请创建成功 - 账号: " + applicationRequest.getAccount() + ", 游戏名: " + applicationRequest.getGameName());
-                return ResponseEntity.ok().body("游戏上架申请创建成功");
-            case -1:
+                yield ResponseEntity.ok().body("游戏上架申请创建成功");
+            }
+            case -1 -> {
                 logUtil.logWarning("游戏上架申请失败 - 厂商账号不存在: " + applicationRequest.getAccount());
-                return ResponseEntity.status(HttpStatus.NOT_FOUND).body("厂商账号不存在或不是供应商角色");
-            case -2:
+                yield ResponseEntity.status(HttpStatus.NOT_FOUND).body("厂商账号不存在或不是供应商角色");
+            }
+            case -2 -> {
                 logUtil.logWarning("游戏上架申请失败 - 游戏不存在或不属于该厂商: " + applicationRequest.getGameName());
-                return ResponseEntity.status(HttpStatus.NOT_FOUND).body("游戏不存在或不属于该厂商");
-            case -3:
+                yield ResponseEntity.status(HttpStatus.NOT_FOUND).body("游戏不存在或不属于该厂商");
+            }
+            case -3 -> {
                 logUtil.logWarning("游戏上架申请失败 - 游戏已上架，无需重复申请: " + applicationRequest.getGameName());
-                return ResponseEntity.status(HttpStatus.CONFLICT).body("游戏已上架，无需重复申请");
-            case -4:
+                yield ResponseEntity.status(HttpStatus.CONFLICT).body("游戏已上架，无需重复申请");
+            }
+            case -4 -> {
                 logUtil.logWarning("游戏上架申请失败 - 该游戏已有待审批的申请: " + applicationRequest.getGameName());
-                return ResponseEntity.status(HttpStatus.CONFLICT).body("该游戏已有待审批的申请");
-            default:
+                yield ResponseEntity.status(HttpStatus.CONFLICT).body("该游戏已有待审批的申请");
+            }
+            default -> {
                 logUtil.logWarning("游戏上架申请失败 - 未知错误: " + result);
-                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("游戏上架申请失败，请稍后重试");
-        }
+                yield ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("游戏上架申请失败，请稍后重试");
+            }
+        };
     }
 
     /**
@@ -319,23 +355,28 @@ public class VendorUserController {
                 offShelfRequest.getGameName()
         );
 
-        switch (result) {
-            case 0:
+        return switch (result) {
+            case 0 -> {
                 logUtil.logDebug("游戏下架成功 - 账号: " + offShelfRequest.getAccount() + ", 游戏名: " + offShelfRequest.getGameName());
-                return ResponseEntity.ok().body("游戏下架成功");
-            case -1:
+                yield ResponseEntity.ok().body("游戏下架成功");
+            }
+            case -1 -> {
                 logUtil.logWarning("游戏下架失败 - 厂商账号不存在: " + offShelfRequest.getAccount());
-                return ResponseEntity.status(HttpStatus.NOT_FOUND).body("厂商账号不存在或不是供应商角色");
-            case -2:
+                yield ResponseEntity.status(HttpStatus.NOT_FOUND).body("厂商账号不存在或不是供应商角色");
+            }
+            case -2 -> {
                 logUtil.logWarning("游戏下架失败 - 游戏不存在或不属于该厂商: " + offShelfRequest.getGameName());
-                return ResponseEntity.status(HttpStatus.NOT_FOUND).body("游戏不存在或不属于该厂商");
-            case -3:
+                yield ResponseEntity.status(HttpStatus.NOT_FOUND).body("游戏不存在或不属于该厂商");
+            }
+            case -3 -> {
                 logUtil.logWarning("游戏下架失败 - 游戏已处于下架状态: " + offShelfRequest.getGameName());
-                return ResponseEntity.status(HttpStatus.CONFLICT).body("游戏已处于下架状态，无需重复操作");
-            default:
+                yield ResponseEntity.status(HttpStatus.CONFLICT).body("游戏已处于下架状态，无需重复操作");
+            }
+            default -> {
                 logUtil.logWarning("游戏下架失败 - 未知错误: " + result);
-                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("游戏下架失败，请稍后重试");
-        }
+                yield ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("游戏下架失败，请稍后重试");
+            }
+        };
     }
 
     /**
@@ -353,17 +394,20 @@ public class VendorUserController {
         
         if (result instanceof Integer) {
             int returnValue = (Integer) result;
-            switch (returnValue) {
-                case -1:
+            return switch (returnValue) {
+                case -1 -> {
                     logUtil.logWarning("游戏上架申请查询失败 - 厂商账号不存在: " + queryRequest.getAccount());
-                    return ResponseEntity.status(HttpStatus.NOT_FOUND).body("厂商账号不存在或不是供应商角色");
-                case -99:
+                    yield ResponseEntity.status(HttpStatus.NOT_FOUND).body("厂商账号不存在或不是供应商角色");
+                }
+                case -99 -> {
                     logUtil.logError("游戏上架申请查询失败 - 存储过程执行异常", null);
-                    return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("查询失败，请稍后重试");
-                default:
+                    yield ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("查询失败，请稍后重试");
+                }
+                default -> {
                     logUtil.logWarning("游戏上架申请查询失败 - 未知错误: " + returnValue);
-                    return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("查询失败，请稍后重试");
-            }
+                    yield ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("查询失败，请稍后重试");
+                }
+            };
         } else {
             // 返回查询结果
             logUtil.logDebug("游戏上架申请查询成功 - 账号: " + queryRequest.getAccount());
@@ -384,23 +428,28 @@ public class VendorUserController {
                 cancelRequest.getApplicationId()
         );
 
-        switch (result) {
-            case 0:
+        return switch (result) {
+            case 0 -> {
                 logUtil.logDebug("游戏上架申请取消成功 - 账号: " + cancelRequest.getAccount() + ", 申请编号: " + cancelRequest.getApplicationId());
-                return ResponseEntity.ok().body("游戏上架申请取消成功");
-            case -1:
+                yield ResponseEntity.ok().body("游戏上架申请取消成功");
+            }
+            case -1 -> {
                 logUtil.logWarning("游戏上架申请取消失败 - 厂商账号不存在: " + cancelRequest.getAccount());
-                return ResponseEntity.status(HttpStatus.NOT_FOUND).body("厂商账号不存在或不是供应商角色");
-            case -2:
+                yield ResponseEntity.status(HttpStatus.NOT_FOUND).body("厂商账号不存在或不是供应商角色");
+            }
+            case -2 -> {
                 logUtil.logWarning("游戏上架申请取消失败 - 申请不存在或不属于该厂商: " + cancelRequest.getApplicationId());
-                return ResponseEntity.status(HttpStatus.NOT_FOUND).body("申请不存在或不属于该厂商");
-            case -3:
+                yield ResponseEntity.status(HttpStatus.NOT_FOUND).body("申请不存在或不属于该厂商");
+            }
+            case -3 -> {
                 logUtil.logWarning("游戏上架申请取消失败 - 只能取消待审批的申请: " + cancelRequest.getApplicationId());
-                return ResponseEntity.status(HttpStatus.CONFLICT).body("只能取消待审批的申请");
-            default:
+                yield ResponseEntity.status(HttpStatus.CONFLICT).body("只能取消待审批的申请");
+            }
+            default -> {
                 logUtil.logWarning("游戏上架申请取消失败 - 未知错误: " + result);
-                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("游戏上架申请取消失败，请稍后重试");
-        }
+                yield ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("游戏上架申请取消失败，请稍后重试");
+            }
+        };
     }
 
     /**
@@ -415,17 +464,20 @@ public class VendorUserController {
         
         if (result instanceof Integer) {
             int returnValue = (Integer) result;
-            switch (returnValue) {
-                case -1:
+            return switch (returnValue) {
+                case -1 -> {
                     logUtil.logWarning("游戏销售数据查询失败 - 厂商账号不存在: " + queryRequest.getAccount());
-                    return ResponseEntity.status(HttpStatus.NOT_FOUND).body("厂商账号不存在或不是供应商角色");
-                case -99:
+                    yield ResponseEntity.status(HttpStatus.NOT_FOUND).body("厂商账号不存在或不是供应商角色");
+                }
+                case -99 -> {
                     logUtil.logError("游戏销售数据查询失败 - 存储过程执行异常", null);
-                    return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("查询失败，请稍后重试");
-                default:
+                    yield ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("查询失败，请稍后重试");
+                }
+                default -> {
                     logUtil.logWarning("游戏销售数据查询失败 - 未知错误: " + returnValue);
-                    return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("查询失败，请稍后重试");
-            }
+                    yield ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("查询失败，请稍后重试");
+                }
+            };
         } else {
             // 返回查询结果
             logUtil.logDebug("游戏销售数据查询成功 - 账号: " + queryRequest.getAccount());
@@ -445,20 +497,24 @@ public class VendorUserController {
         
         if (result instanceof Integer) {
             int returnValue = (Integer) result;
-            switch (returnValue) {
-                case -1:
+            return switch (returnValue) {
+                case -1 -> {
                     logUtil.logWarning("厂商游戏评价查询失败 - 厂商账号不存在: " + queryRequest.getAccount());
-                    return ResponseEntity.status(HttpStatus.NOT_FOUND).body("厂商账号不存在或不是供应商角色");
-                case -2:
+                    yield ResponseEntity.status(HttpStatus.NOT_FOUND).body("厂商账号不存在或不是供应商角色");
+                }
+                case -2 -> {
                     logUtil.logWarning("厂商游戏评价查询失败 - 游戏不存在或不属于该厂商: " + queryRequest.getGameName());
-                    return ResponseEntity.status(HttpStatus.NOT_FOUND).body("游戏不存在或不属于该厂商");
-                case -99:
+                    yield ResponseEntity.status(HttpStatus.NOT_FOUND).body("游戏不存在或不属于该厂商");
+                }
+                case -99 -> {
                     logUtil.logError("厂商游戏评价查询失败 - 存储过程执行异常", null);
-                    return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("查询失败，请稍后重试");
-                default:
+                    yield ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("查询失败，请稍后重试");
+                }
+                default -> {
                     logUtil.logWarning("厂商游戏评价查询失败 - 未知错误: " + returnValue);
-                    return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("查询失败，请稍后重试");
-            }
+                    yield ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("查询失败，请稍后重试");
+                }
+            };
         } else {
             // 返回查询结果
             logUtil.logDebug("厂商游戏评价查询成功 - 账号: " + queryRequest.getAccount() + ", 游戏名: " + queryRequest.getGameName());

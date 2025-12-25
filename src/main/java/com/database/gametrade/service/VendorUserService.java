@@ -108,13 +108,14 @@ public class VendorUserService {
      * 修改厂商个人信息
      */
     @Transactional
-    public boolean updateVendorPersonalInfo(String account, Object personalInfo) {
+    public int updateVendorPersonalInfo(String account, Object personalInfo) {
         // 首先获取用户基本信息
         Optional<UserInfo> userOptional = userInfoRepository.findByAccount(account);
         if (userOptional.isEmpty()) {
-            return false;
+            return -1; // 账号不存在
         }
 
+        UserInfo userInfo = userOptional.get();
         Optional<VendorInfo> vendorInfoOptional = vendorInfoRepository.findByAccount(account);
         if (vendorInfoOptional.isPresent()) {
             VendorInfo vendorInfo = vendorInfoOptional.get();
@@ -123,9 +124,17 @@ public class VendorUserService {
             if (personalInfo instanceof java.util.Map) {
                 // 兼容旧版本Map格式
                 java.util.Map<String, Object> personalInfoMap = (Map<String, Object>) personalInfo;
-                if (personalInfoMap.containsKey("companyName")) {
-                    vendorInfo.setCompanyName((String) personalInfoMap.get("companyName"));
+                
+                // 更新联系方式（需要检查唯一性）
+                if (personalInfoMap.containsKey("contact")) {
+                    String newContact = (String) personalInfoMap.get("contact");
+                    // 检查联系方式是否已存在且不属于当前用户
+                    if (userInfoRepository.existsByContact(newContact) && !newContact.equals(userInfo.getContact())) {
+                        return -2; // 联系方式已存在
+                    }
+                    userInfo.setContact(newContact);
                 }
+                
                 if (personalInfoMap.containsKey("registeredAddress")) {
                     vendorInfo.setRegisteredAddress((String) personalInfoMap.get("registeredAddress"));
                 }
@@ -134,9 +143,16 @@ public class VendorUserService {
                 }
             } else if (personalInfo instanceof VendorInfoDTO vendorInfoDTO) {
                 // 使用DTO格式
-                if (vendorInfoDTO.getCompanyName() != null) {
-                    vendorInfo.setCompanyName(vendorInfoDTO.getCompanyName());
+                // 更新联系方式（需要检查唯一性）
+                if (vendorInfoDTO.getContact() != null) {
+                    String newContact = vendorInfoDTO.getContact();
+                    // 检查联系方式是否已存在且不属于当前用户
+                    if (userInfoRepository.existsByContact(newContact) && !newContact.equals(userInfo.getContact())) {
+                        return -2; // 联系方式已存在
+                    }
+                    userInfo.setContact(newContact);
                 }
+                
                 if (vendorInfoDTO.getRegisteredAddress() != null) {
                     vendorInfo.setRegisteredAddress(vendorInfoDTO.getRegisteredAddress());
                 }
@@ -145,11 +161,13 @@ public class VendorUserService {
                 }
             }
 
+            // 保存用户信息和厂商信息
+            userInfoRepository.save(userInfo);
             vendorInfoRepository.save(vendorInfo);
-            return true;
+            return 0; // 成功
         }
 
-        return false;
+        return -1; // 厂商信息不存在
     }
 
     /**

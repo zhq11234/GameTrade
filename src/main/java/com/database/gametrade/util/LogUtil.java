@@ -146,6 +146,6 @@ public class LogUtil {
      * @param debugMessage 调试信息
      */
     public void logDebug(String debugMessage) {
-        logger.debug("调试信息 - {}", debugMessage);
+        logger.info("调试信息 - {}", debugMessage);
     }
 }
