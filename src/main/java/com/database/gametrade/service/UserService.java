@@ -291,9 +291,8 @@ public class UserService {
                     if (personalInfoMap.containsKey("contactPerson")) {
                         vendorInfo.setContactPerson((String) personalInfoMap.get("contactPerson"));
                     }
-                } else if (personalInfo instanceof VendorInfoDTO) {
+                } else if (personalInfo instanceof VendorInfoDTO vendorInfoDTO) {
                     // 使用DTO格式
-                    VendorInfoDTO vendorInfoDTO = (VendorInfoDTO) personalInfo;
                     if (vendorInfoDTO.getCompanyName() != null) {
                         vendorInfo.setCompanyName(vendorInfoDTO.getCompanyName());
                     }
