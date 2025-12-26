@@ -331,54 +331,6 @@ public class VendorUserService {
     }
 
     /**
-     * 模糊查询游戏信息（调用存储过程）
-     */
-    @Transactional(readOnly = true)
-    public List<Map<String, Object>> queryGameInfoFuzzy(String keyword) {
-        try {
-            // 调用存储过程 sp_query_game_info_fuzzy
-            Query query = entityManager.createNativeQuery("{call sp_query_game_info_fuzzy(?)}");
-            
-            // 设置存储过程参数
-            query.setParameter(1, keyword);
-            
-            // 执行存储过程并获取结果列表
-            List<?> resultList = query.getResultList();
-            
-            if (resultList.isEmpty()) {
-                // 没有查询到结果，返回空列表
-                return new java.util.ArrayList<>();
-            }
-            
-            // 将数据库结果转换为Map列表
-            List<Map<String, Object>> mapList = new java.util.ArrayList<>();
-            for (Object result : resultList) {
-                if (result instanceof Object[] row) {
-                    Map<String, Object> gameMap = new java.util.HashMap<>();
-                    // 根据存储过程返回的字段顺序映射到Map
-                    gameMap.put("gameName", row[0] != null ? row[0].toString() : null);
-                    gameMap.put("category", row[1] != null ? row[1].toString() : null);
-                    gameMap.put("price", row[2] != null ? new BigDecimal(row[2].toString()) : null);
-                    gameMap.put("companyName", row[3] != null ? row[3].toString() : null);
-                    gameMap.put("releaseTime", row[4] != null ? row[4].toString() : null);
-                    gameMap.put("description", row[5] != null ? row[5].toString() : null);
-                    gameMap.put("status", row[6] != null ? row[6].toString() : null);
-                    gameMap.put("downloadLink", row[7] != null ? row[7].toString() : null);
-                    gameMap.put("licenseNumber", row[8] != null ? row[8].toString() : null);
-                    mapList.add(gameMap);
-                }
-            }
-            
-            // 返回Map列表
-            return mapList;
-        } catch (Exception e) {
-            // 捕获存储过程执行异常
-            logUtil.logError("模糊查询游戏信息存储过程执行异常 - 关键词: " + keyword, e);
-            return new java.util.ArrayList<>();
-        }
-    }
-
-    /**
      * 修改游戏信息（调用存储过程）
      */
     @Transactional
@@ -693,12 +645,13 @@ public class VendorUserService {
                     Map<String, Object> salesMap = new java.util.HashMap<>();
                     // 根据存储过程返回的字段顺序映射到Map
                     salesMap.put("gameName", row[0] != null ? row[0].toString() : null);
-                    salesMap.put("companyName", row[1] != null ? row[1].toString() : null);
+                    salesMap.put("category", row[1] != null ? row[1].toString() : null);
                     salesMap.put("price", row[2] != null ? new BigDecimal(row[2].toString()) : null);
-                    salesMap.put("salesCount", row[3] != null ? Integer.parseInt(row[3].toString()) : null);
+                    salesMap.put("salesVolume", row[3] != null ? Integer.parseInt(row[3].toString()) : null);
                     salesMap.put("visitorCount", row[4] != null ? Integer.parseInt(row[4].toString()) : null);
                     salesMap.put("salesAmount", row[5] != null ? new BigDecimal(row[5].toString()) : null);
                     salesMap.put("conversionRate", row[6] != null ? new BigDecimal(row[6].toString()) : null);
+                    salesMap.put("status", row[7] != null ? row[7].toString() : null);
                     mapList.add(salesMap);
                 }
             }
@@ -727,12 +680,11 @@ public class VendorUserService {
             
             // 执行存储过程并获取结果列表
             List<?> resultList = query.getResultList();
-            
             if (resultList.isEmpty()) {
                 // 没有查询到结果，返回空列表
                 return new java.util.ArrayList<>();
             }
-            
+
             // 将数据库结果转换为Map列表
             List<Map<String, Object>> mapList = new java.util.ArrayList<>();
             for (Object result : resultList) {
@@ -740,13 +692,13 @@ public class VendorUserService {
                     Map<String, Object> reviewMap = new java.util.HashMap<>();
                     // 根据存储过程返回的字段顺序映射到Map
                     reviewMap.put("nickname", row[0] != null ? row[0].toString() : null);
-                    reviewMap.put("rating", row[1] != null ? Integer.parseInt(row[1].toString()) : null);
+                    reviewMap.put("score", row[1] != null ? row[1] : null);
                     reviewMap.put("comment", row[2] != null ? row[2].toString() : null);
                     reviewMap.put("reviewTime", row[3] != null ? row[3].toString() : null);
                     mapList.add(reviewMap);
                 }
             }
-            
+
             // 返回Map列表
             return mapList;
         } catch (Exception e) {

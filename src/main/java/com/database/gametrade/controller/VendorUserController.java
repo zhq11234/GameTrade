@@ -236,26 +236,6 @@ public class VendorUserController {
     }
 
     /**
-     * 模糊查询游戏信息
-     * POST /api/vendors/query-game-info-fuzzy
-     */
-    @PostMapping("/query-game-info-fuzzy")
-    public ResponseEntity<?> queryGameInfoFuzzy(@Valid @RequestBody GameInfoFuzzyQueryRequestDTO queryRequest) {
-        logUtil.logDebug("模糊查询游戏信息 - 关键词: " + queryRequest.getKeyword());
-
-        Object result = vendorUserService.queryGameInfoFuzzy(queryRequest.getKeyword());
-        
-        if (result == null || (result instanceof java.util.List && ((java.util.List<?>) result).isEmpty())) {
-            logUtil.logDebug("模糊查询游戏信息 - 未找到匹配的游戏: " + queryRequest.getKeyword());
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("未找到匹配的游戏");
-        } else {
-            // 返回查询结果
-            logUtil.logDebug("模糊查询游戏信息成功 - 关键词: " + queryRequest.getKeyword());
-            return ResponseEntity.ok(result);
-        }
-    }
-
-    /**
      * 修改游戏信息
      * PUT /api/vendors/update-game
      */

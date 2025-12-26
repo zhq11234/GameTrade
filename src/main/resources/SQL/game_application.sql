@@ -199,6 +199,8 @@ BEGIN
 RETURN -3;
 END
 
+        update game_info set status='下架' where game_name in (select game_name from
+            game_application where application_id = @application_id);
         -- 删除申请记录
 DELETE FROM game_application
 WHERE application_id = @application_id AND company_name = @company_name;
