@@ -177,7 +177,7 @@ public class VendorUserController {
     public ResponseEntity<?> queryVendorGames(@Valid @RequestBody VendorGameQueryRequestDTO queryRequest) {
         logUtil.logDebug("查询厂商游戏 - 账号: " + queryRequest.getAccount());
 
-        Object result = vendorUserService.queryVendorGames(queryRequest.getAccount());
+        Object result = vendorUserService.queryVendorGames(queryRequest.getAccount(), queryRequest.getStatus());
         
         if (result instanceof Integer) {
             int returnValue = (Integer) result;

@@ -1,6 +1,7 @@
 -- 创建厂商游戏查询存储过程（基础版本）
 CREATE PROCEDURE sp_query_vendor_games
-    @account VARCHAR(50)
+    @account VARCHAR(50),
+    @status VARCHAR(10) = '全部'
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -21,16 +22,30 @@ RETURN -1;
 END
 
         -- 查询该厂商的所有游戏信息
-SELECT
+IF @status = '全部'
+BEGIN
+    SELECT
+        game_name AS 游戏名,
+        category AS 游戏类别,
+        price AS 价格,
+        status As 状态,
+        description AS 简介
+    FROM game_info
+    WHERE company_name = @company_name
+    ORDER BY game_name;
+END
+ELSE
+BEGIN
+    SELECT
     game_name AS 游戏名,
     category AS 游戏类别,
     price AS 价格,
     status As 状态,
     description AS 简介
 FROM game_info
-WHERE company_name = @company_name
+WHERE company_name = @company_name and status = @status
 ORDER BY game_name;
-
+END
 PRINT '厂商游戏查询成功';
 RETURN 0;
 
