@@ -1,6 +1,10 @@
 package com.database.gametrade.service;
 
 import com.database.gametrade.dto.VendorInfoDTO;
+import com.database.gametrade.dto.VendorGameDTO;
+import com.database.gametrade.dto.GameInfoDTO;
+import com.database.gametrade.dto.GameSalesDataDTO;
+import com.database.gametrade.dto.GameReviewDTO;
 import com.database.gametrade.entity.UserInfo;
 import com.database.gametrade.entity.VendorInfo;
 import com.database.gametrade.repository.UserInfoRepository;
@@ -112,7 +116,8 @@ public class VendorUserService {
         // 首先获取用户基本信息
         Optional<UserInfo> userOptional = userInfoRepository.findByAccount(account);
         if (userOptional.isEmpty()) {
-            return -1; // 账号不存在
+            return -1;
+            // 账号不存在
         }
 
         UserInfo userInfo = userOptional.get();
@@ -237,8 +242,22 @@ public class VendorUserService {
                 return java.util.Collections.emptyList();
             }
             
-            // 返回查询结果
-            return resultList;
+            // 将数据库结果转换为DTO对象列表
+            List<VendorGameDTO> dtoList = new java.util.ArrayList<>();
+            for (Object result : resultList) {
+                if (result instanceof Object[] row) {
+                    // 根据存储过程返回的字段顺序映射到DTO
+                    VendorGameDTO dto = new VendorGameDTO();
+                    dto.setGameName(row[0] != null ? row[0].toString() : null); // 游戏名
+                    dto.setCategory(row[1] != null ? row[1].toString() : null); // 游戏类别
+                    dto.setPrice(row[2] != null ? new BigDecimal(row[2].toString()) : null); // 价格
+                    dto.setDescription(row[3] != null ? row[3].toString() : null); // 简介
+                    dtoList.add(dto);
+                }
+            }
+            
+            // 返回DTO列表
+            return dtoList;
         } catch (Exception e) {
             // 捕获存储过程执行异常
             logUtil.logError("厂商游戏查询存储过程执行异常 - 账号: " + account, e);
@@ -266,8 +285,27 @@ public class VendorUserService {
                 return java.util.Collections.emptyList();
             }
             
-            // 返回查询结果
-            return resultList;
+            // 将数据库结果转换为DTO对象列表
+            List<GameInfoDTO> dtoList = new java.util.ArrayList<>();
+            for (Object result : resultList) {
+                if (result instanceof Object[] row) {
+                    // 根据存储过程返回的字段顺序映射到DTO
+                    GameInfoDTO dto = new GameInfoDTO();
+                    dto.setGameName(row[0] != null ? row[0].toString() : null); // 游戏名
+                    dto.setCategory(row[1] != null ? row[1].toString() : null); // 游戏类别
+                    dto.setPrice(row[2] != null ? new BigDecimal(row[2].toString()) : null); // 价格
+                    dto.setCompanyName(row[3] != null ? row[3].toString() : null); // 企业名
+                    dto.setReleaseTime(row[4] != null ? java.time.LocalDateTime.parse(row[4].toString()) : null); // 上线时间
+                    dto.setDescription(row[5] != null ? row[5].toString() : null); // 游戏简介
+                    dto.setStatus(row[6] != null ? row[6].toString() : null); // 状态
+                    dto.setDownloadLink(row[7] != null ? row[7].toString() : null); // 下载链接
+                    dto.setLicenseNumber(row[8] != null ? row[8].toString() : null); // 版号
+                    dtoList.add(dto);
+                }
+            }
+            
+            // 返回DTO列表
+            return dtoList;
         } catch (Exception e) {
             // 捕获存储过程执行异常
             logUtil.logError("游戏信息查询存储过程执行异常 - 游戏名: " + gameName, e);
@@ -295,8 +333,27 @@ public class VendorUserService {
                 return java.util.Collections.emptyList();
             }
             
-            // 返回查询结果
-            return resultList;
+            // 将数据库结果转换为DTO对象列表
+            List<GameInfoDTO> dtoList = new java.util.ArrayList<>();
+            for (Object result : resultList) {
+                if (result instanceof Object[] row) {
+                    // 根据存储过程返回的字段顺序映射到DTO
+                    GameInfoDTO dto = new GameInfoDTO();
+                    dto.setGameName(row[0] != null ? row[0].toString() : null); // 游戏名
+                    dto.setCategory(row[1] != null ? row[1].toString() : null); // 游戏类别
+                    dto.setPrice(row[2] != null ? new BigDecimal(row[2].toString()) : null); // 价格
+                    dto.setCompanyName(row[3] != null ? row[3].toString() : null); // 企业名
+                    dto.setReleaseTime(row[4] != null ? java.time.LocalDateTime.parse(row[4].toString()) : null); // 上线时间
+                    dto.setDescription(row[5] != null ? row[5].toString() : null); // 游戏简介
+                    dto.setStatus(row[6] != null ? row[6].toString() : null); // 状态
+                    dto.setDownloadLink(row[7] != null ? row[7].toString() : null); // 下载链接
+                    dto.setLicenseNumber(row[8] != null ? row[8].toString() : null); // 版号
+                    dtoList.add(dto);
+                }
+            }
+            
+            // 返回DTO列表
+            return dtoList;
         } catch (Exception e) {
             // 捕获存储过程执行异常
             logUtil.logError("模糊查询游戏信息存储过程执行异常 - 关键词: " + keyword, e);
@@ -524,8 +581,24 @@ public class VendorUserService {
                 return java.util.Collections.emptyList();
             }
             
-            // 返回查询结果
-            return resultList;
+            // 将数据库结果转换为DTO对象列表
+            List<GameSalesDataDTO> dtoList = new java.util.ArrayList<>();
+            for (Object result : resultList) {
+                if (result instanceof Object[] row) {
+                    // 根据存储过程返回的字段顺序映射到DTO
+                    GameSalesDataDTO dto = new GameSalesDataDTO();
+                    dto.setGameName(row[0] != null ? row[0].toString() : null); // 游戏名
+                    dto.setPrice(row[2] != null ? new BigDecimal(row[2].toString()) : null); // 价格
+                    dto.setSalesCount(row[3] != null ? Integer.parseInt(row[3].toString()) : null); // 销量
+                    dto.setSalesAmount(row[5] != null ? new BigDecimal(row[5].toString()) : null); // 销售额
+                    dto.setVisitorCount(row[4] != null ? Integer.parseInt(row[4].toString()) : null); // 访客数
+                    dto.setConversionRate(row[6] != null ? new BigDecimal(row[6].toString()) : null); // 转化率百分比
+                    dtoList.add(dto);
+                }
+            }
+            
+            // 返回DTO列表
+            return dtoList;
         } catch (Exception e) {
             // 捕获存储过程执行异常
             logUtil.logError("游戏销售数据查询存储过程执行异常 - 账号: " + account, e);
@@ -554,8 +627,26 @@ public class VendorUserService {
                 return java.util.Collections.emptyList();
             }
             
-            // 返回查询结果
-            return resultList;
+            // 将数据库结果转换为DTO对象列表
+            List<GameReviewDTO> dtoList = new java.util.ArrayList<>();
+            for (Object result : resultList) {
+                if (result instanceof Object[] row) {
+                    // 根据存储过程返回的字段顺序映射到DTO
+                    GameReviewDTO dto = new GameReviewDTO();
+                    dto.setNickname(row[0] != null ? row[0].toString() : null);
+                    // 昵称
+                    dto.setRating(row[1] != null ? Integer.parseInt(row[1].toString()) : null);
+                    // 评分
+                    dto.setComment(row[2] != null ? row[2].toString() : null);
+                    // 评论
+                    dto.setReviewTime(row[3] != null ? java.time.LocalDateTime.parse(row[3].toString()) : null);
+                    // 评价时间
+                    dtoList.add(dto);
+                }
+            }
+            
+            // 返回DTO列表
+            return dtoList;
         } catch (Exception e) {
             // 捕获存储过程执行异常
             logUtil.logError("厂商游戏评价查询存储过程执行异常 - 账号: " + account + ", 游戏名: " + gameName, e);
