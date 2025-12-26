@@ -135,7 +135,8 @@ public class VendorUserService {
                     String newContact = (String) personalInfoMap.get("contact");
                     // 检查联系方式是否已存在且不属于当前用户
                     if (userInfoRepository.existsByContact(newContact) && !newContact.equals(userInfo.getContact())) {
-                        return -2; // 联系方式已存在
+                        return -2;
+                        // 联系方式已存在
                     }
                     userInfo.setContact(newContact);
                 }
@@ -153,7 +154,8 @@ public class VendorUserService {
                     String newContact = vendorInfoDTO.getContact();
                     // 检查联系方式是否已存在且不属于当前用户
                     if (userInfoRepository.existsByContact(newContact) && !newContact.equals(userInfo.getContact())) {
-                        return -2; // 联系方式已存在
+                        return -2;
+                        // 联系方式已存在
                     }
                     userInfo.setContact(newContact);
                 }
@@ -169,10 +171,12 @@ public class VendorUserService {
             // 保存用户信息和厂商信息
             userInfoRepository.save(userInfo);
             vendorInfoRepository.save(vendorInfo);
-            return 0; // 成功
+            return 0;
+            // 成功
         }
 
-        return -1; // 厂商信息不存在
+        return -1;
+        // 厂商信息不存在
     }
 
     /**
@@ -248,10 +252,14 @@ public class VendorUserService {
                 if (result instanceof Object[] row) {
                     // 根据存储过程返回的字段顺序映射到DTO
                     VendorGameDTO dto = new VendorGameDTO();
-                    dto.setGameName(row[0] != null ? row[0].toString() : null); // 游戏名
-                    dto.setCategory(row[1] != null ? row[1].toString() : null); // 游戏类别
-                    dto.setPrice(row[2] != null ? new BigDecimal(row[2].toString()) : null); // 价格
-                    dto.setDescription(row[3] != null ? row[3].toString() : null); // 简介
+                    dto.setGameName(row[0] != null ? row[0].toString() : null);
+                    // 游戏名
+                    dto.setCategory(row[1] != null ? row[1].toString() : null);
+                    // 游戏类别
+                    dto.setPrice(row[2] != null ? new BigDecimal(row[2].toString()) : null);
+                    // 价格
+                    dto.setDescription(row[3] != null ? row[3].toString() : null);
+                    // 简介
                     dtoList.add(dto);
                 }
             }
@@ -291,15 +299,24 @@ public class VendorUserService {
                 if (result instanceof Object[] row) {
                     // 根据存储过程返回的字段顺序映射到DTO
                     GameInfoDTO dto = new GameInfoDTO();
-                    dto.setGameName(row[0] != null ? row[0].toString() : null); // 游戏名
-                    dto.setCategory(row[1] != null ? row[1].toString() : null); // 游戏类别
-                    dto.setPrice(row[2] != null ? new BigDecimal(row[2].toString()) : null); // 价格
-                    dto.setCompanyName(row[3] != null ? row[3].toString() : null); // 企业名
-                    dto.setReleaseTime(row[4] != null ? java.time.LocalDateTime.parse(row[4].toString()) : null); // 上线时间
-                    dto.setDescription(row[5] != null ? row[5].toString() : null); // 游戏简介
-                    dto.setStatus(row[6] != null ? row[6].toString() : null); // 状态
-                    dto.setDownloadLink(row[7] != null ? row[7].toString() : null); // 下载链接
-                    dto.setLicenseNumber(row[8] != null ? row[8].toString() : null); // 版号
+                    dto.setGameName(row[0] != null ? row[0].toString() : null);
+                    // 游戏名
+                    dto.setCategory(row[1] != null ? row[1].toString() : null);
+                    // 游戏类别
+                    dto.setPrice(row[2] != null ? new BigDecimal(row[2].toString()) : null);
+                    // 价格
+                    dto.setCompanyName(row[3] != null ? row[3].toString() : null);
+                    // 企业名
+                    dto.setReleaseTime(row[4] != null ? java.time.LocalDateTime.parse(row[4].toString()) : null);
+                    // 上线时间
+                    dto.setDescription(row[5] != null ? row[5].toString() : null);
+                    // 游戏简介
+                    dto.setStatus(row[6] != null ? row[6].toString() : null);
+                    // 状态
+                    dto.setDownloadLink(row[7] != null ? row[7].toString() : null);
+                    // 下载链接
+                    dto.setLicenseNumber(row[8] != null ? row[8].toString() : null);
+                    // 版号
                     dtoList.add(dto);
                 }
             }
@@ -339,15 +356,24 @@ public class VendorUserService {
                 if (result instanceof Object[] row) {
                     // 根据存储过程返回的字段顺序映射到DTO
                     GameInfoDTO dto = new GameInfoDTO();
-                    dto.setGameName(row[0] != null ? row[0].toString() : null); // 游戏名
-                    dto.setCategory(row[1] != null ? row[1].toString() : null); // 游戏类别
-                    dto.setPrice(row[2] != null ? new BigDecimal(row[2].toString()) : null); // 价格
-                    dto.setCompanyName(row[3] != null ? row[3].toString() : null); // 企业名
-                    dto.setReleaseTime(row[4] != null ? java.time.LocalDateTime.parse(row[4].toString()) : null); // 上线时间
-                    dto.setDescription(row[5] != null ? row[5].toString() : null); // 游戏简介
-                    dto.setStatus(row[6] != null ? row[6].toString() : null); // 状态
-                    dto.setDownloadLink(row[7] != null ? row[7].toString() : null); // 下载链接
-                    dto.setLicenseNumber(row[8] != null ? row[8].toString() : null); // 版号
+                    dto.setGameName(row[0] != null ? row[0].toString() : null);
+                    // 游戏名
+                    dto.setCategory(row[1] != null ? row[1].toString() : null);
+                    // 游戏类别
+                    dto.setPrice(row[2] != null ? new BigDecimal(row[2].toString()) : null);
+                    // 价格
+                    dto.setCompanyName(row[3] != null ? row[3].toString() : null);
+                    // 企业名
+                    dto.setReleaseTime(row[4] != null ? java.time.LocalDateTime.parse(row[4].toString()) : null);
+                    // 上线时间
+                    dto.setDescription(row[5] != null ? row[5].toString() : null);
+                    // 游戏简介
+                    dto.setStatus(row[6] != null ? row[6].toString() : null);
+                    // 状态
+                    dto.setDownloadLink(row[7] != null ? row[7].toString() : null);
+                    // 下载链接
+                    dto.setLicenseNumber(row[8] != null ? row[8].toString() : null);
+                    // 版号
                     dtoList.add(dto);
                 }
             }
@@ -587,12 +613,18 @@ public class VendorUserService {
                 if (result instanceof Object[] row) {
                     // 根据存储过程返回的字段顺序映射到DTO
                     GameSalesDataDTO dto = new GameSalesDataDTO();
-                    dto.setGameName(row[0] != null ? row[0].toString() : null); // 游戏名
-                    dto.setPrice(row[2] != null ? new BigDecimal(row[2].toString()) : null); // 价格
-                    dto.setSalesCount(row[3] != null ? Integer.parseInt(row[3].toString()) : null); // 销量
-                    dto.setSalesAmount(row[5] != null ? new BigDecimal(row[5].toString()) : null); // 销售额
-                    dto.setVisitorCount(row[4] != null ? Integer.parseInt(row[4].toString()) : null); // 访客数
-                    dto.setConversionRate(row[6] != null ? new BigDecimal(row[6].toString()) : null); // 转化率百分比
+                    dto.setGameName(row[0] != null ? row[0].toString() : null);
+                    // 游戏名
+                    dto.setPrice(row[2] != null ? new BigDecimal(row[2].toString()) : null);
+                    // 价格
+                    dto.setSalesCount(row[3] != null ? Integer.parseInt(row[3].toString()) : null);
+                    // 销量
+                    dto.setSalesAmount(row[5] != null ? new BigDecimal(row[5].toString()) : null);
+                    // 销售额
+                    dto.setVisitorCount(row[4] != null ? Integer.parseInt(row[4].toString()) : null);
+                    // 访客数
+                    dto.setConversionRate(row[6] != null ? new BigDecimal(row[6].toString()) : null);
+                    // 转化率百分比
                     dtoList.add(dto);
                 }
             }
