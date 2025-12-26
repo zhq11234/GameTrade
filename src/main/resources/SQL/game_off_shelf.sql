@@ -7,8 +7,6 @@ BEGIN
     SET NOCOUNT ON;
 
 BEGIN TRY
-BEGIN TRANSACTION;
-
         -- 根据账号获取企业名
         DECLARE @company_name VARCHAR(100);
 
@@ -20,7 +18,6 @@ WHERE account = @account;
 IF @company_name IS NULL
 BEGIN
             RAISERROR('厂商账号不存在或不是供应商角色', 16, 1);
-ROLLBACK TRANSACTION;
 RETURN -1;
 END
 
@@ -28,7 +25,6 @@ END
         IF NOT EXISTS (SELECT 1 FROM game_info WHERE game_name = @game_name AND company_name = @company_name)
 BEGIN
             RAISERROR('游戏不存在或不属于该厂商', 16, 1);
-ROLLBACK TRANSACTION;
 RETURN -2;
 END
 
@@ -40,7 +36,6 @@ SELECT @current_status = status FROM game_info WHERE game_name = @game_name;
 IF @current_status = '下架'
 BEGIN
             RAISERROR('游戏已处于下架状态，无需重复操作', 16, 1);
-ROLLBACK TRANSACTION;
 RETURN -3;
 END
 
@@ -61,14 +56,10 @@ FROM game_info
 WHERE game_name = @game_name;
 
 PRINT '游戏下架成功';
-COMMIT TRANSACTION;
 RETURN 0;
 
 END TRY
 BEGIN CATCH
-IF @@TRANCOUNT > 0
-            ROLLBACK TRANSACTION;
-
         DECLARE @ErrorMessage NVARCHAR(4000) = ERROR_MESSAGE();
         DECLARE @ErrorSeverity INT = ERROR_SEVERITY();
         DECLARE @ErrorState INT = ERROR_STATE();
@@ -78,4 +69,3 @@ RETURN -99;
 END CATCH
 END;
 GO
-

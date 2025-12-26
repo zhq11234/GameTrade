@@ -177,8 +177,8 @@ public class VendorUserService {
     public int createGame(String account, String gameName, String category, BigDecimal price,
                          String description, String downloadLink, String licenseNumber) {
         try {
-            // 调用存储过程 sp_create_game
-            Query query = entityManager.createNativeQuery("{call sp_create_game(?, ?, ?, ?, ?, ?, ?)}");
+            // 使用原生SQL调用存储过程并获取返回值
+            Query query = entityManager.createNativeQuery("DECLARE @result INT; EXEC @result = sp_create_game ?, ?, ?, ?, ?, ?, ?; SELECT @result");
             
             // 设置存储过程参数
             query.setParameter(1, account);
@@ -189,7 +189,7 @@ public class VendorUserService {
             query.setParameter(6, downloadLink);
             query.setParameter(7, licenseNumber);
             
-            // 执行存储过程并获取返回值
+            // 执行查询并获取返回值
             Object result = query.getSingleResult();
             
             if (result instanceof Integer) {

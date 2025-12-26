@@ -11,8 +11,6 @@ BEGIN
     SET NOCOUNT ON;
 
 BEGIN TRY
-BEGIN TRANSACTION;
-
         -- 根据账号获取企业名
         DECLARE @company_name VARCHAR(100);
 
@@ -24,7 +22,6 @@ WHERE account = @account;
 IF @company_name IS NULL
 BEGIN
             RAISERROR('厂商账号不存在或不是供应商角色', 16, 1);
-ROLLBACK TRANSACTION;
 RETURN -1;
 END
 
@@ -32,7 +29,6 @@ END
         IF NOT EXISTS (SELECT 1 FROM game_info WHERE game_name = @game_name AND company_name = @company_name)
 BEGIN
             RAISERROR('游戏不存在或不属于该厂商', 16, 1);
-ROLLBACK TRANSACTION;
 RETURN -2;
 END
 
@@ -40,7 +36,6 @@ END
         IF @price IS NULL AND @description IS NULL AND @license_number IS NULL AND @download_link IS NULL
 BEGIN
             RAISERROR('至少需要提供一个要修改的字段', 16, 1);
-ROLLBACK TRANSACTION;
 RETURN -3;
 END
 
@@ -48,7 +43,6 @@ END
         IF @price IS NOT NULL AND @price < 0
 BEGIN
             RAISERROR('价格不能为负数', 16, 1);
-ROLLBACK TRANSACTION;
 RETURN -4;
 END
 
@@ -59,7 +53,6 @@ END
         )
 BEGIN
             RAISERROR('版号已存在', 16, 1);
-ROLLBACK TRANSACTION;
 RETURN -5;
 END
 
@@ -72,14 +65,10 @@ SET price = ISNULL(@price, price),
 WHERE game_name = @game_name AND company_name = @company_name;
 
 PRINT '游戏信息修改成功';
-COMMIT TRANSACTION;
 RETURN 0;
 
 END TRY
 BEGIN CATCH
-IF @@TRANCOUNT > 0
-            ROLLBACK TRANSACTION;
-
         DECLARE @ErrorMessage NVARCHAR(4000) = ERROR_MESSAGE();
         DECLARE @ErrorSeverity INT = ERROR_SEVERITY();
         DECLARE @ErrorState INT = ERROR_STATE();

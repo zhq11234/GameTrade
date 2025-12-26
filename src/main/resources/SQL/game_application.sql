@@ -7,8 +7,6 @@ BEGIN
     SET NOCOUNT ON;
 
 BEGIN TRY
-BEGIN TRANSACTION;
-
         -- 根据账号获取企业名
         DECLARE @company_name VARCHAR(100);
 
@@ -20,7 +18,6 @@ WHERE account = @account;
 IF @company_name IS NULL
 BEGIN
             RAISERROR('厂商账号不存在或不是供应商角色', 16, 1);
-ROLLBACK TRANSACTION;
 RETURN -1;
 END
 
@@ -28,7 +25,6 @@ END
         IF NOT EXISTS (SELECT 1 FROM game_info WHERE game_name = @game_name AND company_name = @company_name)
 BEGIN
             RAISERROR('游戏不存在或不属于该厂商', 16, 1);
-ROLLBACK TRANSACTION;
 RETURN -2;
 END
 
@@ -39,7 +35,6 @@ SELECT @current_status = status FROM game_info WHERE game_name = @game_name;
 IF @current_status = '上架'
 BEGIN
             RAISERROR('游戏已上架，无需重复申请', 16, 1);
-ROLLBACK TRANSACTION;
 RETURN -3;
 END
 
@@ -50,7 +45,6 @@ END
         )
 BEGIN
             RAISERROR('该游戏已有待审批的申请', 16, 1);
-ROLLBACK TRANSACTION;
 RETURN -4;
 END
 
@@ -61,35 +55,24 @@ INSERT INTO game_application (
     game_name,
     company_name,
     approval_status,
+    approval_result,
     application_time
-)VALUES (
-            @game_name,
-            @company_name,
-            '待审批',  -- 初始审批状态
-            GETDATE()  -- 申请时间（申请生成时的当前时间）
-        );
+) VALUES (
+             @game_name,
+             @company_name,
+             '待审批',  -- 初始状态
+             NULL,      -- 初始审批结果为空
+             GETDATE()  -- 申请时间
+         );
 
--- 获取自动生成的application_id
-SET @application_id = SCOPE_IDENTITY();
-
-        -- 返回申请信息
-SELECT
-    @application_id AS 申请编号,
-    @game_name AS 游戏名,
-    @company_name AS 企业名,
-    '待审批' AS 审批状态,
-    NULL AS 审批结果,
-    GETDATE() AS 申请时间;  -- 申请时间（申请生成时的当前时间）
+-- 获取生成的申请编号
+SELECT @application_id = SCOPE_IDENTITY();
 
 PRINT '游戏上架申请提交成功';
-COMMIT TRANSACTION;
 RETURN 0;
 
 END TRY
 BEGIN CATCH
-IF @@TRANCOUNT > 0
-            ROLLBACK TRANSACTION;
-
         DECLARE @ErrorMessage NVARCHAR(4000) = ERROR_MESSAGE();
         DECLARE @ErrorSeverity INT = ERROR_SEVERITY();
         DECLARE @ErrorState INT = ERROR_STATE();
@@ -178,8 +161,6 @@ BEGIN
     SET NOCOUNT ON;
 
 BEGIN TRY
-BEGIN TRANSACTION;
-
         -- 根据账号获取企业名
         DECLARE @company_name VARCHAR(100);
 
@@ -191,7 +172,6 @@ WHERE account = @account;
 IF @company_name IS NULL
 BEGIN
             RAISERROR('厂商账号不存在或不是供应商角色', 16, 1);
-ROLLBACK TRANSACTION;
 RETURN -1;
 END
 
@@ -202,7 +182,6 @@ END
         )
 BEGIN
             RAISERROR('申请不存在或不属于该厂商', 16, 1);
-ROLLBACK TRANSACTION;
 RETURN -2;
 END
 
@@ -216,7 +195,6 @@ WHERE application_id = @application_id;
 IF @current_status != '待审批'
 BEGIN
             RAISERROR('只能取消待审批的申请', 16, 1);
-ROLLBACK TRANSACTION;
 RETURN -3;
 END
 
@@ -225,14 +203,10 @@ DELETE FROM game_application
 WHERE application_id = @application_id AND company_name = @company_name;
 
 PRINT '游戏上架申请取消成功';
-COMMIT TRANSACTION;
 RETURN 0;
 
 END TRY
 BEGIN CATCH
-IF @@TRANCOUNT > 0
-            ROLLBACK TRANSACTION;
-
         DECLARE @ErrorMessage NVARCHAR(4000) = ERROR_MESSAGE();
         DECLARE @ErrorSeverity INT = ERROR_SEVERITY();
         DECLARE @ErrorState INT = ERROR_STATE();

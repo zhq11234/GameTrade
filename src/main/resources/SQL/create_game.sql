@@ -12,8 +12,6 @@ BEGIN
     SET NOCOUNT ON;
 
 BEGIN TRY
-BEGIN TRANSACTION;
-
         -- 根据账号获取企业名
         DECLARE @company_name VARCHAR(100);
 
@@ -25,7 +23,6 @@ WHERE account = @account;
 IF @company_name IS NULL
 BEGIN
             RAISERROR('厂商账号不存在或不是供应商角色', 16, 1);
-ROLLBACK TRANSACTION;
 RETURN -1;
 END
 
@@ -33,7 +30,6 @@ END
         IF EXISTS (SELECT 1 FROM game_info WHERE game_name = @game_name)
 BEGIN
             RAISERROR('游戏名已存在', 16, 1);
-ROLLBACK TRANSACTION;
 RETURN -2;
 END
 
@@ -41,7 +37,6 @@ END
         IF EXISTS (SELECT 1 FROM game_info WHERE license_number = @license_number)
 BEGIN
             RAISERROR('版号已存在', 16, 1);
-ROLLBACK TRANSACTION;
 RETURN -3;
 END
 
@@ -49,7 +44,6 @@ END
         IF @price < 0
 BEGIN
             RAISERROR('价格不能为负数', 16, 1);
-ROLLBACK TRANSACTION;
 RETURN -4;
 END
 
@@ -79,14 +73,10 @@ INSERT INTO game_info (
          );
 
 PRINT '游戏创建成功';
-COMMIT TRANSACTION;
 RETURN 0;
 
 END TRY
 BEGIN CATCH
-IF @@TRANCOUNT > 0
-            ROLLBACK TRANSACTION;
-
         DECLARE @ErrorMessage NVARCHAR(4000) = ERROR_MESSAGE();
         DECLARE @ErrorSeverity INT = ERROR_SEVERITY();
         DECLARE @ErrorState INT = ERROR_STATE();
