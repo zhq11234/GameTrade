@@ -24,7 +24,8 @@ END
 SELECT
     game_name AS 游戏名,
     category AS 游戏类别,
-    price AS 价格
+    price AS 价格,
+    description AS 简介
 FROM game_info
 WHERE company_name = @company_name
 ORDER BY game_name;
