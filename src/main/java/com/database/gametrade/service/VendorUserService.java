@@ -228,14 +228,14 @@ public class VendorUserService {
      * 厂商拥有游戏查询（调用存储过程）
      */
     @Transactional(readOnly = true)
-    public Object queryVendorGames(String account) {
+    public Object queryVendorGames(String account,String status) {
         try {
             // 调用存储过程 sp_query_vendor_games
-            Query query = entityManager.createNativeQuery("{call sp_query_vendor_games(?)}");
+            Query query = entityManager.createNativeQuery("{call sp_query_vendor_games(?,?)}");
             
             // 设置存储过程参数
             query.setParameter(1, account);
-            
+            query.setParameter(2, status);
             // 执行存储过程并获取结果列表
             List<?> resultList = query.getResultList();
             
