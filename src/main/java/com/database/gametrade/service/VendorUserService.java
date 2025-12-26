@@ -258,7 +258,9 @@ public class VendorUserService {
                     // 游戏类别
                     dto.setPrice(row[2] != null ? new BigDecimal(row[2].toString()) : null);
                     // 价格
-                    dto.setDescription(row[3] != null ? row[3].toString() : null);
+                    dto.setStatus(row[3] != null ? row[3].toString() : null);
+                    // 游戏状态
+                    dto.setDescription(row[4] != null ? row[4].toString() : null);
                     // 简介
                     dtoList.add(dto);
                 }
