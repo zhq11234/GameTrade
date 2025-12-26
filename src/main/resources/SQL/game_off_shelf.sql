@@ -43,19 +43,6 @@ END
 UPDATE game_info
 SET status = '下架'
 WHERE game_name = @game_name AND company_name = @company_name;
-
--- 返回下架后的游戏信息
-SELECT
-    game_name AS 游戏名,
-    category AS 游戏类别,
-    price AS 价格,
-    company_name AS 企业名,
-    status AS 状态,
-    '下架成功' AS 操作结果
-FROM game_info
-WHERE game_name = @game_name;
-
-PRINT '游戏下架成功';
 RETURN 0;
 
 END TRY
@@ -69,3 +56,4 @@ RETURN -99;
 END CATCH
 END;
 GO
+

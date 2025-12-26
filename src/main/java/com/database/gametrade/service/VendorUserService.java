@@ -431,14 +431,14 @@ public class VendorUserService {
     @Transactional
     public int createGameApplication(String account, String gameName) {
         try {
-            // 调用存储过程 sp_create_game_application
-            Query query = entityManager.createNativeQuery("{call sp_create_game_application(?, ?)}");
+            // 使用原生SQL调用存储过程并获取返回值
+            Query query = entityManager.createNativeQuery("DECLARE @result INT; EXEC @result = sp_create_game_application ?, ?; SELECT @result");
             
             // 设置存储过程参数
             query.setParameter(1, account);
             query.setParameter(2, gameName);
             
-            // 执行存储过程并获取返回值
+            // 执行查询并获取返回值
             Object result = query.getSingleResult();
             
             if (result instanceof Integer) {
@@ -472,14 +472,14 @@ public class VendorUserService {
     @Transactional
     public int offShelfGame(String account, String gameName) {
         try {
-            // 调用存储过程 sp_off_shelf_game
-            Query query = entityManager.createNativeQuery("{call sp_off_shelf_game(?, ?)}");
+            // 使用原生SQL调用存储过程并获取返回值
+            Query query = entityManager.createNativeQuery("DECLARE @result INT; EXEC @result = sp_off_shelf_game ?, ?; SELECT @result");
             
             // 设置存储过程参数
             query.setParameter(1, account);
             query.setParameter(2, gameName);
             
-            // 执行存储过程并获取返回值
+            // 执行查询并获取返回值
             Object result = query.getSingleResult();
             
             if (result instanceof Integer) {
@@ -559,14 +559,14 @@ public class VendorUserService {
     @Transactional
     public int cancelGameApplication(String account, Integer applicationId) {
         try {
-            // 调用存储过程 sp_cancel_game_application
-            Query query = entityManager.createNativeQuery("{call sp_cancel_game_application(?, ?)}");
+            // 使用原生SQL调用存储过程并获取返回值
+            Query query = entityManager.createNativeQuery("DECLARE @result INT; EXEC @result = sp_cancel_game_application ?, ?; SELECT @result");
             
             // 设置存储过程参数
             query.setParameter(1, account);
             query.setParameter(2, applicationId);
             
-            // 执行存储过程并获取返回值
+            // 执行查询并获取返回值
             Object result = query.getSingleResult();
             
             if (result instanceof Integer) {

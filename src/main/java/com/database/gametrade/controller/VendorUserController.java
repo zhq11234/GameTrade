@@ -346,7 +346,7 @@ public class VendorUserController {
      * 游戏下架（厂商）
      * PUT /api/vendors/game-off-shelf
      */
-    @PutMapping("/game-off-shelf")
+    @PostMapping("/game-off-shelf")
     public ResponseEntity<?> offShelfGame(@Valid @RequestBody GameOffShelfRequestDTO offShelfRequest) {
         logUtil.logDebug("游戏下架 - 账号: " + offShelfRequest.getAccount() + ", 游戏名: " + offShelfRequest.getGameName());
 
