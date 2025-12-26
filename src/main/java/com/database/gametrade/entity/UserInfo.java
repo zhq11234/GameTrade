@@ -1,7 +1,5 @@
 package com.database.gametrade.entity;
 
-import com.database.gametrade.entity.BuyerInfo;
-import com.database.gametrade.entity.VendorInfo;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;

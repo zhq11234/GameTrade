@@ -2,6 +2,7 @@
 CREATE PROCEDURE sp_update_game_info
     @account VARCHAR(50),
     @game_name VARCHAR(100),
+    @category VARCHAR(50) = NULL,
     @price DECIMAL(10,2) = NULL,
     @description VARCHAR(500) = NULL,
     @license_number VARCHAR(50) = NULL,
@@ -33,7 +34,7 @@ RETURN -2;
 END
 
         -- 检查是否至少提供了一个要修改的字段
-        IF @price IS NULL AND @description IS NULL AND @license_number IS NULL AND @download_link IS NULL
+        IF @price IS NULL AND @description IS NULL AND @license_number IS NULL AND @download_link IS NULL AND @category IS NULL
 BEGIN
             RAISERROR('至少需要提供一个要修改的字段', 16, 1);
 RETURN -3;
@@ -49,10 +50,10 @@ END
         -- 检查版号是否已存在（排除当前游戏）
         IF @license_number IS NOT NULL AND EXISTS (
             SELECT 1 FROM game_info
-            WHERE license_number = @license_number AND game_name != @game_name
+            WHERE license_number = @license_number AND game_name = @game_name
         )
 BEGIN
-            RAISERROR('版号已存在', 16, 1);
+            RAISERROR('版号重复', 16, 1);
 RETURN -5;
 END
 
@@ -60,6 +61,7 @@ END
 UPDATE game_info
 SET price = ISNULL(@price, price),
     description = ISNULL(@description, description),
+    category = ISNULL(@category, category),
     license_number = ISNULL(@license_number, license_number),
     download_link = ISNULL(@download_link, download_link)
 WHERE game_name = @game_name AND company_name = @company_name;

@@ -1,10 +1,8 @@
 package com.database.gametrade.service;
 
-import com.database.gametrade.dto.VendorInfoDTO;
-import com.database.gametrade.dto.VendorGameDTO;
 import com.database.gametrade.dto.GameInfoDTO;
-import com.database.gametrade.dto.GameSalesDataDTO;
-import com.database.gametrade.dto.GameReviewDTO;
+import com.database.gametrade.dto.VendorGameDTO;
+import com.database.gametrade.dto.VendorInfoDTO;
 import com.database.gametrade.entity.UserInfo;
 import com.database.gametrade.entity.VendorInfo;
 import com.database.gametrade.repository.UserInfoRepository;
@@ -336,7 +334,7 @@ public class VendorUserService {
      * 模糊查询游戏信息（调用存储过程）
      */
     @Transactional(readOnly = true)
-    public Object queryGameInfoFuzzy(String keyword) {
+    public List<Map<String, Object>> queryGameInfoFuzzy(String keyword) {
         try {
             // 调用存储过程 sp_query_game_info_fuzzy
             Query query = entityManager.createNativeQuery("{call sp_query_game_info_fuzzy(?)}");
@@ -349,43 +347,34 @@ public class VendorUserService {
             
             if (resultList.isEmpty()) {
                 // 没有查询到结果，返回空列表
-                return java.util.Collections.emptyList();
+                return new java.util.ArrayList<>();
             }
             
-            // 将数据库结果转换为DTO对象列表
-            List<GameInfoDTO> dtoList = new java.util.ArrayList<>();
+            // 将数据库结果转换为Map列表
+            List<Map<String, Object>> mapList = new java.util.ArrayList<>();
             for (Object result : resultList) {
                 if (result instanceof Object[] row) {
-                    // 根据存储过程返回的字段顺序映射到DTO
-                    GameInfoDTO dto = new GameInfoDTO();
-                    dto.setGameName(row[0] != null ? row[0].toString() : null);
-                    // 游戏名
-                    dto.setCategory(row[1] != null ? row[1].toString() : null);
-                    // 游戏类别
-                    dto.setPrice(row[2] != null ? new BigDecimal(row[2].toString()) : null);
-                    // 价格
-                    dto.setCompanyName(row[3] != null ? row[3].toString() : null);
-                    // 企业名
-                    dto.setReleaseTime(row[4] != null ? java.time.LocalDateTime.parse(row[4].toString()) : null);
-                    // 上线时间
-                    dto.setDescription(row[5] != null ? row[5].toString() : null);
-                    // 游戏简介
-                    dto.setStatus(row[6] != null ? row[6].toString() : null);
-                    // 状态
-                    dto.setDownloadLink(row[7] != null ? row[7].toString() : null);
-                    // 下载链接
-                    dto.setLicenseNumber(row[8] != null ? row[8].toString() : null);
-                    // 版号
-                    dtoList.add(dto);
+                    Map<String, Object> gameMap = new java.util.HashMap<>();
+                    // 根据存储过程返回的字段顺序映射到Map
+                    gameMap.put("gameName", row[0] != null ? row[0].toString() : null);
+                    gameMap.put("category", row[1] != null ? row[1].toString() : null);
+                    gameMap.put("price", row[2] != null ? new BigDecimal(row[2].toString()) : null);
+                    gameMap.put("companyName", row[3] != null ? row[3].toString() : null);
+                    gameMap.put("releaseTime", row[4] != null ? row[4].toString() : null);
+                    gameMap.put("description", row[5] != null ? row[5].toString() : null);
+                    gameMap.put("status", row[6] != null ? row[6].toString() : null);
+                    gameMap.put("downloadLink", row[7] != null ? row[7].toString() : null);
+                    gameMap.put("licenseNumber", row[8] != null ? row[8].toString() : null);
+                    mapList.add(gameMap);
                 }
             }
             
-            // 返回DTO列表
-            return dtoList;
+            // 返回Map列表
+            return mapList;
         } catch (Exception e) {
             // 捕获存储过程执行异常
             logUtil.logError("模糊查询游戏信息存储过程执行异常 - 关键词: " + keyword, e);
-            return null;
+            return new java.util.ArrayList<>();
         }
     }
 
@@ -396,8 +385,8 @@ public class VendorUserService {
     public int updateGame(String account, String gameName, String category, BigDecimal price,
                          String description, String downloadLink, String licenseNumber) {
         try {
-            // 调用存储过程 sp_update_game_info
-            Query query = entityManager.createNativeQuery("{call sp_update_game_info(?, ?, ?, ?, ?, ?, ?)}");
+            // 使用原生SQL调用存储过程并获取返回值
+            Query query = entityManager.createNativeQuery("DECLARE @result INT; EXEC @result = sp_update_game_info ?, ?, ?, ?, ?, ?, ?; SELECT @result");
             
             // 设置存储过程参数
             query.setParameter(1, account);
@@ -408,7 +397,7 @@ public class VendorUserService {
             query.setParameter(6, downloadLink);
             query.setParameter(7, licenseNumber);
             
-            // 执行存储过程并获取返回值
+            // 执行查询并获取返回值
             Object result = query.getSingleResult();
             
             if (result instanceof Integer) {
@@ -522,7 +511,7 @@ public class VendorUserService {
      * 查询游戏上架申请（调用存储过程）
      */
     @Transactional(readOnly = true)
-    public Object queryGameApplications(String account, String approvalStatus) {
+    public List<Map<String, Object>> queryGameApplications(String account, String approvalStatus) {
         try {
             // 调用存储过程 sp_query_applications_by_status
             Query query = entityManager.createNativeQuery("{call sp_query_applications_by_status(?, ?)}");
@@ -536,15 +525,31 @@ public class VendorUserService {
             
             if (resultList.isEmpty()) {
                 // 没有查询到结果，返回空列表
-                return java.util.Collections.emptyList();
+                return new java.util.ArrayList<>();
             }
             
-            // 返回查询结果
-            return resultList;
+            // 将数据库结果转换为Map列表
+            List<Map<String, Object>> mapList = new java.util.ArrayList<>();
+            for (Object result : resultList) {
+                if (result instanceof Object[] row) {
+                    Map<String, Object> applicationMap = new java.util.HashMap<>();
+                    // 根据存储过程返回的字段顺序映射到Map
+                    // 假设存储过程返回字段：application_id, game_name, application_time, approval_status, remarks
+                    applicationMap.put("applicationId", row[0] != null ? row[0].toString() : null);
+                    applicationMap.put("gameName", row[1] != null ? row[1].toString() : null);
+                    applicationMap.put("applicationTime", row[2] != null ? row[2].toString() : null);
+                    applicationMap.put("approvalStatus", row[3] != null ? row[3].toString() : null);
+                    applicationMap.put("remarks", row[4] != null ? row[4].toString() : null);
+                    mapList.add(applicationMap);
+                }
+            }
+            
+            // 返回Map列表
+            return mapList;
         } catch (Exception e) {
             // 捕获存储过程执行异常
             logUtil.logError("游戏上架申请查询存储过程执行异常 - 账号: " + account, e);
-            return -99;
+            return new java.util.ArrayList<>();
         }
     }
 
@@ -593,7 +598,7 @@ public class VendorUserService {
      * 游戏销售数据查询（调用存储过程）
      */
     @Transactional(readOnly = true)
-    public Object queryGameSales(String account) {
+    public List<Map<String, Object>> queryGameSales(String account) {
         try {
             // 调用存储过程 sp_query_game_sales_data
             Query query = entityManager.createNativeQuery("{call sp_query_game_sales_data(?)}");
@@ -606,37 +611,32 @@ public class VendorUserService {
             
             if (resultList.isEmpty()) {
                 // 没有查询到结果，返回空列表
-                return java.util.Collections.emptyList();
+                return new java.util.ArrayList<>();
             }
             
-            // 将数据库结果转换为DTO对象列表
-            List<GameSalesDataDTO> dtoList = new java.util.ArrayList<>();
+            // 将数据库结果转换为Map列表
+            List<Map<String, Object>> mapList = new java.util.ArrayList<>();
             for (Object result : resultList) {
                 if (result instanceof Object[] row) {
-                    // 根据存储过程返回的字段顺序映射到DTO
-                    GameSalesDataDTO dto = new GameSalesDataDTO();
-                    dto.setGameName(row[0] != null ? row[0].toString() : null);
-                    // 游戏名
-                    dto.setPrice(row[2] != null ? new BigDecimal(row[2].toString()) : null);
-                    // 价格
-                    dto.setSalesCount(row[3] != null ? Integer.parseInt(row[3].toString()) : null);
-                    // 销量
-                    dto.setSalesAmount(row[5] != null ? new BigDecimal(row[5].toString()) : null);
-                    // 销售额
-                    dto.setVisitorCount(row[4] != null ? Integer.parseInt(row[4].toString()) : null);
-                    // 访客数
-                    dto.setConversionRate(row[6] != null ? new BigDecimal(row[6].toString()) : null);
-                    // 转化率百分比
-                    dtoList.add(dto);
+                    Map<String, Object> salesMap = new java.util.HashMap<>();
+                    // 根据存储过程返回的字段顺序映射到Map
+                    salesMap.put("gameName", row[0] != null ? row[0].toString() : null);
+                    salesMap.put("companyName", row[1] != null ? row[1].toString() : null);
+                    salesMap.put("price", row[2] != null ? new BigDecimal(row[2].toString()) : null);
+                    salesMap.put("salesCount", row[3] != null ? Integer.parseInt(row[3].toString()) : null);
+                    salesMap.put("visitorCount", row[4] != null ? Integer.parseInt(row[4].toString()) : null);
+                    salesMap.put("salesAmount", row[5] != null ? new BigDecimal(row[5].toString()) : null);
+                    salesMap.put("conversionRate", row[6] != null ? new BigDecimal(row[6].toString()) : null);
+                    mapList.add(salesMap);
                 }
             }
             
-            // 返回DTO列表
-            return dtoList;
+            // 返回Map列表
+            return mapList;
         } catch (Exception e) {
             // 捕获存储过程执行异常
             logUtil.logError("游戏销售数据查询存储过程执行异常 - 账号: " + account, e);
-            return -99;
+            return new java.util.ArrayList<>();
         }
     }
 
@@ -644,7 +644,7 @@ public class VendorUserService {
      * 厂商游戏评价查询（调用存储过程）
      */
     @Transactional(readOnly = true)
-    public Object queryGameReviews(String account, String gameName) {
+    public List<Map<String, Object>> queryGameReviews(String account, String gameName) {
         try {
             // 调用存储过程 sp_query_game_reviews
             Query query = entityManager.createNativeQuery("{call sp_query_game_reviews(?, ?)}");
@@ -658,33 +658,29 @@ public class VendorUserService {
             
             if (resultList.isEmpty()) {
                 // 没有查询到结果，返回空列表
-                return java.util.Collections.emptyList();
+                return new java.util.ArrayList<>();
             }
             
-            // 将数据库结果转换为DTO对象列表
-            List<GameReviewDTO> dtoList = new java.util.ArrayList<>();
+            // 将数据库结果转换为Map列表
+            List<Map<String, Object>> mapList = new java.util.ArrayList<>();
             for (Object result : resultList) {
                 if (result instanceof Object[] row) {
-                    // 根据存储过程返回的字段顺序映射到DTO
-                    GameReviewDTO dto = new GameReviewDTO();
-                    dto.setNickname(row[0] != null ? row[0].toString() : null);
-                    // 昵称
-                    dto.setRating(row[1] != null ? Integer.parseInt(row[1].toString()) : null);
-                    // 评分
-                    dto.setComment(row[2] != null ? row[2].toString() : null);
-                    // 评论
-                    dto.setReviewTime(row[3] != null ? java.time.LocalDateTime.parse(row[3].toString()) : null);
-                    // 评价时间
-                    dtoList.add(dto);
+                    Map<String, Object> reviewMap = new java.util.HashMap<>();
+                    // 根据存储过程返回的字段顺序映射到Map
+                    reviewMap.put("nickname", row[0] != null ? row[0].toString() : null);
+                    reviewMap.put("rating", row[1] != null ? Integer.parseInt(row[1].toString()) : null);
+                    reviewMap.put("comment", row[2] != null ? row[2].toString() : null);
+                    reviewMap.put("reviewTime", row[3] != null ? row[3].toString() : null);
+                    mapList.add(reviewMap);
                 }
             }
             
-            // 返回DTO列表
-            return dtoList;
+            // 返回Map列表
+            return mapList;
         } catch (Exception e) {
             // 捕获存储过程执行异常
             logUtil.logError("厂商游戏评价查询存储过程执行异常 - 账号: " + account + ", 游戏名: " + gameName, e);
-            return -99;
+            return new java.util.ArrayList<>();
         }
     }
 }
