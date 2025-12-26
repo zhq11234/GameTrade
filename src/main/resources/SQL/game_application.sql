@@ -218,3 +218,46 @@ END;
 GO
 
 
+-- 创建根据企业名查询游戏申请信息存储过程
+CREATE PROCEDURE sp_query_applications_by_company
+    @company_name VARCHAR(100)
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+BEGIN TRY
+        -- 检查企业是否存在
+        IF NOT EXISTS (SELECT 1 FROM vendor_info WHERE company_name = @company_name)
+        BEGIN
+            RAISERROR('企业不存在', 16, 1);
+            RETURN -1;
+        END
+
+        -- 查询该企业的所有游戏申请信息
+        SELECT
+            application_id AS 申请编号,
+            game_name AS 游戏名,
+            company_name AS 企业名,
+            approval_status AS 审批状态,
+            approval_result AS 审批结果,
+            application_time AS 申请时间
+        FROM game_application
+        WHERE company_name = @company_name
+        ORDER BY application_time DESC;
+
+        PRINT '游戏申请信息查询成功';
+        RETURN 0;
+
+END TRY
+BEGIN CATCH
+        DECLARE @ErrorMessage NVARCHAR(4000) = ERROR_MESSAGE();
+        DECLARE @ErrorSeverity INT = ERROR_SEVERITY();
+        DECLARE @ErrorState INT = ERROR_STATE();
+
+        RAISERROR(@ErrorMessage, @ErrorSeverity, @ErrorState);
+        RETURN -99;
+END CATCH
+END;
+GO
+
+
