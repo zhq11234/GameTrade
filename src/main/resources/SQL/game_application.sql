@@ -6,82 +6,83 @@ AS
 BEGIN
     SET NOCOUNT ON;
 
-BEGIN TRY
+    BEGIN TRY
         -- 根据账号获取企业名
         DECLARE @company_name VARCHAR(100);
 
-SELECT @company_name = company_name
-FROM vendor_info
-WHERE account = @account;
+        SELECT @company_name = company_name
+        FROM vendor_info
+        WHERE account = @account;
 
 -- 检查厂商是否存在
-IF @company_name IS NULL
-BEGIN
-            RAISERROR('厂商账号不存在或不是供应商角色', 16, 1);
-RETURN -1;
-END
+        IF @company_name IS NULL
+            BEGIN
+                --             RAISERROR('厂商账号不存在或不是供应商角色', 16, 1);
+                RETURN -1;
+            END
 
         -- 检查游戏是否存在且属于该厂商
         IF NOT EXISTS (SELECT 1 FROM game_info WHERE game_name = @game_name AND company_name = @company_name)
-BEGIN
-            RAISERROR('游戏不存在或不属于该厂商', 16, 1);
-RETURN -2;
-END
+            BEGIN
+                --             RAISERROR('游戏不存在或不属于该厂商', 16, 1);
+                RETURN -2;
+            END
 
         -- 检查游戏是否已上架
         DECLARE @current_status VARCHAR(20);
-SELECT @current_status = status FROM game_info WHERE game_name = @game_name;
+        SELECT @current_status = status FROM game_info WHERE game_name = @game_name;
 
-IF @current_status = '上架'
-BEGIN
-            RAISERROR('游戏已上架，无需重复申请', 16, 1);
-RETURN -3;
-END
+        IF @current_status = '上架'
+            BEGIN
+                --             RAISERROR('游戏已上架', 16, 1);
+                RETURN -3;
+            END
 
         -- 检查是否已存在待审批的申请
         IF EXISTS (
             SELECT 1 FROM game_application
             WHERE game_name = @game_name AND company_name = @company_name AND approval_status = '待审批'
         )
-BEGIN
-            RAISERROR('该游戏已有待审批的申请', 16, 1);
-RETURN -4;
-END
+            BEGIN
+                --             RAISERROR('该游戏已有待审批的申请', 16, 1);
+                RETURN -4;
+            END
 
         -- 插入游戏上架申请（application_id由数据库自动生成）
         DECLARE @application_id INT;
 
-INSERT INTO game_application (
-    game_name,
-    company_name,
-    approval_status,
-    approval_result,
-    application_time
-) VALUES (
-             @game_name,
-             @company_name,
-             '待审批',  -- 初始状态
-             NULL,      -- 初始审批结果为空
-             GETDATE()  -- 申请时间
-         );
+        INSERT INTO game_application (
+            game_name,
+            company_name,
+            approval_status,
+            approval_result,
+            application_time
+        ) VALUES (
+                     @game_name,
+                     @company_name,
+                     '待审批',  -- 初始状态
+                     NULL,      -- 初始审批结果为空
+                     GETDATE()  -- 申请时间
+                 );
 
 -- 获取生成的申请编号
-SELECT @application_id = SCOPE_IDENTITY();
+        update game_info set status = '待上架' where game_name = @game_name;
+        SELECT @application_id = SCOPE_IDENTITY();
 
-PRINT '游戏上架申请提交成功';
-RETURN 0;
+        PRINT '游戏上架申请提交成功';
+        RETURN 0;
 
-END TRY
-BEGIN CATCH
+    END TRY
+    BEGIN CATCH
         DECLARE @ErrorMessage NVARCHAR(4000) = ERROR_MESSAGE();
         DECLARE @ErrorSeverity INT = ERROR_SEVERITY();
         DECLARE @ErrorState INT = ERROR_STATE();
 
         RAISERROR(@ErrorMessage, @ErrorSeverity, @ErrorState);
-RETURN -99;
-END CATCH
+        RETURN -99;
+    END CATCH
 END;
-GO
+go
 
 -- 创建按状态查询游戏上架申请存储过程（替代原有的两个查询存储过程）
 CREATE PROCEDURE sp_query_applications_by_status

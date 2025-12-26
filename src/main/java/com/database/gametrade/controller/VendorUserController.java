@@ -391,7 +391,7 @@ public class VendorUserController {
                 queryRequest.getAccount(),
                 queryRequest.getApprovalStatus()
         );
-        
+
         if (result instanceof Integer) {
             int returnValue = (Integer) result;
             return switch (returnValue) {
@@ -411,6 +411,39 @@ public class VendorUserController {
         } else {
             // 返回查询结果
             logUtil.logDebug("游戏上架申请查询成功 - 账号: " + queryRequest.getAccount());
+            return ResponseEntity.ok(result);
+        }
+    }
+
+    /**
+     * 根据企业名查询游戏上架申请（调用 sp_query_applications_by_company 存储过程）
+     * POST /api/vendors/query-applications-by-company
+     */
+    @PostMapping("/query-applications-by-company")
+    public ResponseEntity<?> queryApplicationsByCompany(@Valid @RequestBody GameApplicationQueryRequestDTO queryRequest) {
+        logUtil.logDebug("根据企业名查询游戏上架申请 - 账号: " + queryRequest.getAccount());
+
+        Object result = vendorUserService.queryApplicationsByCompany(queryRequest.getAccount());
+        
+        if (result instanceof Integer) {
+            int returnValue = (Integer) result;
+            return switch (returnValue) {
+                case -1 -> {
+                    logUtil.logWarning("根据企业名查询游戏上架申请失败 - 厂商账号不存在: " + queryRequest.getAccount());
+                    yield ResponseEntity.status(HttpStatus.NOT_FOUND).body("厂商账号不存在或不是供应商角色");
+                }
+                case -99 -> {
+                    logUtil.logError("根据企业名查询游戏上架申请失败 - 存储过程执行异常", null);
+                    yield ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("查询失败，请稍后重试");
+                }
+                default -> {
+                    logUtil.logWarning("根据企业名查询游戏上架申请失败 - 未知错误: " + returnValue);
+                    yield ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("查询失败，请稍后重试");
+                }
+            };
+        } else {
+            // 返回查询结果
+            logUtil.logDebug("根据企业名查询游戏上架申请成功 - 账号: " + queryRequest.getAccount());
             return ResponseEntity.ok(result);
         }
     }

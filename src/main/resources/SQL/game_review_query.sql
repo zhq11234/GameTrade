@@ -37,7 +37,7 @@ SELECT
 FROM buyer_game_info bgi
          INNER JOIN buyer_info bi ON bgi.nickname = bi.nickname
 WHERE bgi.game_name = @game_name
-ORDER BY bgi.review_time DESC;
+ORDER BY bgi.review_time DESC
 
 PRINT '游戏评价查询成功';
 RETURN 0;

@@ -431,8 +431,12 @@ public class VendorUserService {
     @Transactional
     public int createGameApplication(String account, String gameName) {
         try {
-            // 使用原生SQL调用存储过程并获取返回值
-            Query query = entityManager.createNativeQuery("DECLARE @result INT; EXEC @result = sp_create_game_application ?, ?; SELECT @result");
+            // 使用标准存储过程调用语法，通过输出参数获取返回值
+            Query query = entityManager.createNativeQuery(
+                "DECLARE @return_value INT; " +
+                "EXEC @return_value = sp_create_game_application @account = ?, @game_name = ?; " +
+                "SELECT @return_value AS return_value"
+            );
             
             // 设置存储过程参数
             query.setParameter(1, account);
@@ -444,23 +448,32 @@ public class VendorUserService {
             if (result instanceof Integer) {
                 int returnValue = (Integer) result;
                 if (returnValue == 0) {
-                    // 存储过程执行成功
                     logUtil.logDebug("游戏上架申请存储过程执行成功 - 账号: " + account + ", 游戏名: " + gameName);
                 }
                 return returnValue;
             } else if (result instanceof Number) {
                 int returnValue = ((Number) result).intValue();
                 if (returnValue == 0) {
-                    // 存储过程执行成功
                     logUtil.logDebug("游戏上架申请存储过程执行成功 - 账号: " + account + ", 游戏名: " + gameName);
                 }
+                else if (returnValue == -1) {
+                    logUtil.logDebug("厂商账号不存在或不是供应商角色: " + account + ", 游戏名: " + gameName);
+                }
+                else if(returnValue == -2) {
+                    logUtil.logDebug("游戏不存在或不属于该厂商: " + gameName);
+                }
+                else if(returnValue == -3) {
+                    logUtil.logDebug("游戏已上架: " + gameName);
+                }
+                else if(returnValue == -4) {
+                    logUtil.logDebug("该游戏已有待审批的申请: " + gameName);
+                }
                 return returnValue;
-            } else {
-                // 如果返回值不是数字类型，返回错误代码
+            }
+            else {
                 return -99;
             }
         } catch (Exception e) {
-            // 捕获存储过程执行异常
             logUtil.logError("游戏上架申请存储过程执行异常 - 账号: " + account + ", 游戏名: " + gameName, e);
             return -99;
         }
@@ -511,7 +524,7 @@ public class VendorUserService {
      * 查询游戏上架申请（调用存储过程）
      */
     @Transactional(readOnly = true)
-    public List<Map<String, Object>> queryGameApplications(String account, String approvalStatus) {
+    public Object queryGameApplications(String account, String approvalStatus) {
         try {
             // 调用存储过程 sp_query_applications_by_status
             Query query = entityManager.createNativeQuery("{call sp_query_applications_by_status(?, ?)}");
@@ -527,6 +540,9 @@ public class VendorUserService {
                 // 没有查询到结果，返回空列表
                 return new java.util.ArrayList<>();
             }
+            if(resultList.get(0) instanceof Integer) {
+               return resultList.get(0);
+            }
             
             // 将数据库结果转换为Map列表
             List<Map<String, Object>> mapList = new java.util.ArrayList<>();
@@ -537,9 +553,10 @@ public class VendorUserService {
                     // 假设存储过程返回字段：application_id, game_name, application_time, approval_status, remarks
                     applicationMap.put("applicationId", row[0] != null ? row[0].toString() : null);
                     applicationMap.put("gameName", row[1] != null ? row[1].toString() : null);
-                    applicationMap.put("applicationTime", row[2] != null ? row[2].toString() : null);
+                    applicationMap.put("companyName", row[2] != null ? row[2].toString() : null);
                     applicationMap.put("approvalStatus", row[3] != null ? row[3].toString() : null);
-                    applicationMap.put("remarks", row[4] != null ? row[4].toString() : null);
+                    applicationMap.put("approvalResult", row[4] != null ? row[4].toString() : null);
+                    applicationMap.put("applicationTime", row[5] != null ? row[5].toString() : null);
                     mapList.add(applicationMap);
                 }
             }
@@ -595,10 +612,65 @@ public class VendorUserService {
     }
 
     /**
+     * 根据企业名查询游戏上架申请（调用存储过程 sp_query_applications_by_company）
+     */
+    @Transactional(readOnly = true)
+    public Object queryApplicationsByCompany(String account) {
+        try {
+            // 根据账号获取企业名
+            Optional<VendorInfo> vendorInfoOptional = vendorInfoRepository.findByAccount(account);
+            if (vendorInfoOptional.isEmpty()) {
+                return -1;
+                // 厂商账号不存在
+            }
+            
+            String companyName = vendorInfoOptional.get().getCompanyName();
+            
+            // 调用存储过程 sp_query_applications_by_company
+            Query query = entityManager.createNativeQuery("{call sp_query_applications_by_company(?)}");
+            
+            // 设置存储过程参数
+            query.setParameter(1, companyName);
+            
+            // 执行存储过程并获取结果列表
+            List<?> resultList = query.getResultList();
+            
+            if (resultList.isEmpty()) {
+                // 没有查询到结果，返回空列表
+                return java.util.Collections.emptyList();
+            }
+            
+            // 将数据库结果转换为Map列表
+            List<Map<String, Object>> mapList = new java.util.ArrayList<>();
+            for (Object result : resultList) {
+                if (result instanceof Object[] row) {
+                    Map<String, Object> applicationMap = new java.util.HashMap<>();
+                    // 根据存储过程返回的字段顺序映射到Map
+                    // 存储过程返回字段：申请编号, 游戏名, 企业名, 审批状态, 审批结果, 申请时间
+                    applicationMap.put("applicationId", row[0] != null ? row[0].toString() : null);
+                    applicationMap.put("gameName", row[1] != null ? row[1].toString() : null);
+                    applicationMap.put("companyName", row[2] != null ? row[2].toString() : null);
+                    applicationMap.put("approvalStatus", row[3] != null ? row[3].toString() : null);
+                    applicationMap.put("approvalResult", row[4] != null ? row[4].toString() : null);
+                    applicationMap.put("applicationTime", row[5] != null ? row[5].toString() : null);
+                    mapList.add(applicationMap);
+                }
+            }
+            
+            // 返回Map列表
+            return mapList;
+        } catch (Exception e) {
+            // 捕获存储过程执行异常
+            logUtil.logError("根据企业名查询游戏上架申请存储过程执行异常 - 账号: " + account, e);
+            return -99;
+        }
+    }
+
+    /**
      * 游戏销售数据查询（调用存储过程）
      */
     @Transactional(readOnly = true)
-    public List<Map<String, Object>> queryGameSales(String account) {
+    public Object queryGameSales(String account) {
         try {
             // 调用存储过程 sp_query_game_sales_data
             Query query = entityManager.createNativeQuery("{call sp_query_game_sales_data(?)}");
@@ -636,7 +708,7 @@ public class VendorUserService {
         } catch (Exception e) {
             // 捕获存储过程执行异常
             logUtil.logError("游戏销售数据查询存储过程执行异常 - 账号: " + account, e);
-            return new java.util.ArrayList<>();
+            return -99;
         }
     }
 
@@ -644,7 +716,7 @@ public class VendorUserService {
      * 厂商游戏评价查询（调用存储过程）
      */
     @Transactional(readOnly = true)
-    public List<Map<String, Object>> queryGameReviews(String account, String gameName) {
+    public Object queryGameReviews(String account, String gameName) {
         try {
             // 调用存储过程 sp_query_game_reviews
             Query query = entityManager.createNativeQuery("{call sp_query_game_reviews(?, ?)}");
@@ -680,7 +752,7 @@ public class VendorUserService {
         } catch (Exception e) {
             // 捕获存储过程执行异常
             logUtil.logError("厂商游戏评价查询存储过程执行异常 - 账号: " + account + ", 游戏名: " + gameName, e);
-            return new java.util.ArrayList<>();
+            return -99;
         }
     }
 }
