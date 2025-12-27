@@ -20,6 +20,7 @@ public class GameInfoDTO {
     private String licenseNumber;
     private String score;
     private int salesVolume;
+    private String status;
 
     public GameInfoDTO() {}
 

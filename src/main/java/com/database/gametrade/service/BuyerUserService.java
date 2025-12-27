@@ -44,8 +44,7 @@ public class BuyerUserService {
     public List<GameSearchResponseDTO> searchGameByName(String gameName) {
         String sql = "EXEC sp_SearchGameByName ?";
         // 如果gameName为空，传入空字符串或null，让存储过程处理
-        String searchName = (gameName == null || gameName.trim().isEmpty()) ? "" : gameName;
-        return jdbcTemplate.query(sql, new GameSearchRowMapper(), searchName);
+        return jdbcTemplate.query(sql, new GameSearchRowMapper(), gameName);
     }
 
     /**

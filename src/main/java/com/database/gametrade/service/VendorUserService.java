@@ -307,18 +307,14 @@ public class VendorUserService {
                     // 价格
                     dto.setCompanyName(row[3] != null ? row[3].toString() : null);
                     // 企业名
-                    dto.setReleaseTime(row[4] != null ? java.time.LocalDateTime.parse(row[4].toString()) : null);
+                    dto.setReleaseTime(row[4] != null ? java.time.LocalDate.parse(row[4].toString()).atStartOfDay() : null);
                     // 上线时间
                     //简介
                     dto.setDescription(row[5] != null ? row[5].toString() : null);
-                    // 版号
-                    dto.setLicenseNumber(row[6] != null ? row[6].toString() : null);
+                    dto.setStatus(row[6] != null ? row[6].toString() : null);
+                    dto.setDownloadLink(row[7] != null ? row[7].toString() : null);
                     //评分
-                    dto.setScore(row[7] != null ? row[7].toString() : null);
-                    //销量
-                    dto.setSalesVolume(row[8] != null? Integer.parseInt(row[8].toString()) :null);
-
-
+                    dto.setLicenseNumber(row[8] != null ? row[8].toString() : null);
 
                     dtoList.add(dto);
                 }
