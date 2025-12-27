@@ -58,11 +58,21 @@ public class VendorUserController {
      */
     @PostMapping("/logout")
     public ResponseEntity<?> logoutVendor(@RequestParam String account) {
-        // 这里可以添加登出逻辑，比如清除session或token
-        Optional<VendorInfo> vendorInfo = vendorInfoRepository.findByAccount(account);
-        String companyName = vendorInfo.map(VendorInfo::getCompanyName).orElse("未知企业名");
-        logUtil.logVendorLogout(account, companyName);
-        return ResponseEntity.ok().body("商家登出成功");
+        try {
+            // URL解码account参数，处理特殊字符
+            String decodedAccount = java.net.URLDecoder.decode(account, "UTF-8");
+            // 这里可以添加登出逻辑，比如清除session或token
+            Optional<VendorInfo> vendorInfo = vendorInfoRepository.findByAccount(decodedAccount);
+            String companyName = vendorInfo.map(VendorInfo::getCompanyName).orElse("未知企业名");
+            logUtil.logVendorLogout(decodedAccount, companyName);
+            return ResponseEntity.ok().body("商家登出成功");
+        } catch (java.io.UnsupportedEncodingException e) {
+            // 如果解码失败，使用原始参数
+            Optional<VendorInfo> vendorInfo = vendorInfoRepository.findByAccount(account);
+            String companyName = vendorInfo.map(VendorInfo::getCompanyName).orElse("未知企业名");
+            logUtil.logVendorLogout(account, companyName);
+            return ResponseEntity.ok().body("商家登出成功");
+        }
     }
 
     /**
@@ -71,8 +81,16 @@ public class VendorUserController {
      */
     @GetMapping("/check-company")
     public ResponseEntity<Boolean> checkCompanyNameExists(@RequestParam String companyName) {
-        boolean exists = vendorUserService.checkCompanyNameExists(companyName);
-        return ResponseEntity.ok(exists);
+        try {
+            // URL解码companyName参数，处理特殊字符
+            String decodedCompanyName = java.net.URLDecoder.decode(companyName, "UTF-8");
+            boolean exists = vendorUserService.checkCompanyNameExists(decodedCompanyName);
+            return ResponseEntity.ok(exists);
+        } catch (java.io.UnsupportedEncodingException e) {
+            // 如果解码失败，使用原始参数
+            boolean exists = vendorUserService.checkCompanyNameExists(companyName);
+            return ResponseEntity.ok(exists);
+        }
     }
 
     /**
@@ -81,16 +99,30 @@ public class VendorUserController {
      */
     @GetMapping("/personal-info")
     public ResponseEntity<?> getPersonalInfo(@RequestParam String account) {
-        logUtil.logDebug("查询厂商个人信息 - 账号: " + account);
+        try {
+            // URL解码account参数，处理特殊字符
+            String decodedAccount = java.net.URLDecoder.decode(account, "UTF-8");
+            logUtil.logDebug("查询厂商个人信息 - 账号: " + decodedAccount);
 
-        Object personalInfo = vendorUserService.getVendorPersonalInfo(account);
-        if (personalInfo == null) {
-            logUtil.logWarning("查询厂商个人信息失败 - 账号不存在: " + account);
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("厂商不存在");
+            Object personalInfo = vendorUserService.getVendorPersonalInfo(decodedAccount);
+            if (personalInfo == null) {
+                logUtil.logWarning("查询厂商个人信息失败 - 账号不存在: " + decodedAccount);
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body("厂商不存在");
+            }
+
+            logUtil.logDebug("查询厂商个人信息成功 - 账号: " + decodedAccount);
+            return ResponseEntity.ok(personalInfo);
+        } catch (java.io.UnsupportedEncodingException e) {
+            // 如果解码失败，使用原始参数
+            logUtil.logDebug("查询厂商个人信息 - 账号: " + account);
+            Object personalInfo = vendorUserService.getVendorPersonalInfo(account);
+            if (personalInfo == null) {
+                logUtil.logWarning("查询厂商个人信息失败 - 账号不存在: " + account);
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body("厂商不存在");
+            }
+            logUtil.logDebug("查询厂商个人信息成功 - 账号: " + account);
+            return ResponseEntity.ok(personalInfo);
         }
-
-        logUtil.logDebug("查询厂商个人信息成功 - 账号: " + account);
-        return ResponseEntity.ok(personalInfo);
     }
 
     /**
@@ -99,28 +131,55 @@ public class VendorUserController {
      */
     @PutMapping("/personal-info")
     public ResponseEntity<?> updatePersonalInfo(@RequestParam String account, @Valid @RequestBody VendorInfoDTO personalInfo) {
-        logUtil.logDebug("修改厂商个人信息 - 账号: " + account);
+        try {
+            // URL解码account参数，处理特殊字符
+            String decodedAccount = java.net.URLDecoder.decode(account, "UTF-8");
+            logUtil.logDebug("修改厂商个人信息 - 账号: " + decodedAccount);
 
-        int result = vendorUserService.updateVendorPersonalInfo(account, personalInfo);
-        
-        return switch (result) {
-            case 0 -> {
-                logUtil.logDebug("修改厂商个人信息成功 - 账号: " + account);
-                yield ResponseEntity.ok().body("厂商个人信息修改成功");
-            }
-            case -1 -> {
-                logUtil.logWarning("修改厂商个人信息失败 - 账号不存在: " + account);
-                yield ResponseEntity.status(HttpStatus.NOT_FOUND).body("厂商不存在");
-            }
-            case -2 -> {
-                logUtil.logWarning("修改厂商个人信息失败 - 联系方式已存在: " + account);
-                yield ResponseEntity.status(HttpStatus.CONFLICT).body("联系方式已存在");
-            }
-            default -> {
-                logUtil.logWarning("修改厂商个人信息失败 - 未知错误: " + result);
-                yield ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("修改失败，请稍后重试");
-            }
-        };
+            int result = vendorUserService.updateVendorPersonalInfo(decodedAccount, personalInfo);
+            
+            return switch (result) {
+                case 0 -> {
+                    logUtil.logDebug("修改厂商个人信息成功 - 账号: " + decodedAccount);
+                    yield ResponseEntity.ok().body("厂商个人信息修改成功");
+                }
+                case -1 -> {
+                    logUtil.logWarning("修改厂商个人信息失败 - 账号不存在: " + decodedAccount);
+                    yield ResponseEntity.status(HttpStatus.NOT_FOUND).body("厂商不存在");
+                }
+                case -2 -> {
+                    logUtil.logWarning("修改厂商个人信息失败 - 联系方式已存在: " + decodedAccount);
+                    yield ResponseEntity.status(HttpStatus.CONFLICT).body("联系方式已存在");
+                }
+                default -> {
+                    logUtil.logWarning("修改厂商个人信息失败 - 未知错误: " + result);
+                    yield ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("修改失败，请稍后重试");
+                }
+            };
+        } catch (java.io.UnsupportedEncodingException e) {
+            // 如果解码失败，使用原始参数
+            logUtil.logDebug("修改厂商个人信息 - 账号: " + account);
+            int result = vendorUserService.updateVendorPersonalInfo(account, personalInfo);
+            
+            return switch (result) {
+                case 0 -> {
+                    logUtil.logDebug("修改厂商个人信息成功 - 账号: " + account);
+                    yield ResponseEntity.ok().body("厂商个人信息修改成功");
+                }
+                case -1 -> {
+                    logUtil.logWarning("修改厂商个人信息失败 - 账号不存在: " + account);
+                    yield ResponseEntity.status(HttpStatus.NOT_FOUND).body("厂商不存在");
+                }
+                case -2 -> {
+                    logUtil.logWarning("修改厂商个人信息失败 - 联系方式已存在: " + account);
+                    yield ResponseEntity.status(HttpStatus.CONFLICT).body("联系方式已存在");
+                }
+                default -> {
+                    logUtil.logWarning("修改厂商个人信息失败 - 未知错误: " + result);
+                    yield ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("修改失败，请稍后重试");
+                }
+            };
+        }
     }
 
     /**

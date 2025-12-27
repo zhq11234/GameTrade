@@ -153,10 +153,20 @@ public class BuyerUserController {
      */
     @GetMapping("/games/search-by-category")
     public ResponseEntity<List<GameSearchResponseDTO>> searchGameByCategory(@RequestParam String category) {
-        logUtil.logDebug("按游戏分类查询游戏 - 分类: " + category);
-        
-        List<GameSearchResponseDTO> result = buyerUserService.searchGameByCategory(category);
-        return ResponseEntity.ok(result);
+        try {
+            // URL解码category参数，处理特殊字符
+            String decodedCategory = java.net.URLDecoder.decode(category, "UTF-8");
+            logUtil.logDebug("按游戏分类查询游戏 - 分类: " + decodedCategory);
+            
+            List<GameSearchResponseDTO> result = buyerUserService.searchGameByCategory(decodedCategory);
+            return ResponseEntity.ok(result);
+        } catch (java.io.UnsupportedEncodingException e) {
+            logUtil.logWarning("URL解码失败 - category: " + category + ", 错误: " + e.getMessage());
+            // 如果解码失败，使用原始参数
+            logUtil.logDebug("按游戏分类查询游戏 - 分类: " + category);
+            List<GameSearchResponseDTO> result = buyerUserService.searchGameByCategory(category);
+            return ResponseEntity.ok(result);
+        }
     }
 
     /**
@@ -179,10 +189,20 @@ public class BuyerUserController {
      */
     @GetMapping("/games/search-by-preference")
     public ResponseEntity<List<GameSearchResponseDTO>> searchGameByBuyerPreference(@RequestParam String buyerNickname) {
-        logUtil.logDebug("按买家偏好查询游戏 - 买家昵称: " + buyerNickname);
-        
-        List<GameSearchResponseDTO> result = buyerUserService.searchGameByBuyerPreference(buyerNickname);
-        return ResponseEntity.ok(result);
+        try {
+            // URL解码buyerNickname参数，处理特殊字符
+            String decodedBuyerNickname = java.net.URLDecoder.decode(buyerNickname, "UTF-8");
+            logUtil.logDebug("按买家偏好查询游戏 - 买家昵称: " + decodedBuyerNickname);
+            
+            List<GameSearchResponseDTO> result = buyerUserService.searchGameByBuyerPreference(decodedBuyerNickname);
+            return ResponseEntity.ok(result);
+        } catch (java.io.UnsupportedEncodingException e) {
+            logUtil.logWarning("URL解码失败 - buyerNickname: " + buyerNickname + ", 错误: " + e.getMessage());
+            // 如果解码失败，使用原始参数
+            logUtil.logDebug("按买家偏好查询游戏 - 买家昵称: " + buyerNickname);
+            List<GameSearchResponseDTO> result = buyerUserService.searchGameByBuyerPreference(buyerNickname);
+            return ResponseEntity.ok(result);
+        }
     }
 
     /**
@@ -191,16 +211,31 @@ public class BuyerUserController {
      */
     @GetMapping("/games/details")
     public ResponseEntity<?> getGameDetails(@RequestParam String gameName) {
-        logUtil.logDebug("查询游戏详细信息 - 游戏名: " + gameName);
-        
-        GameInfoDTO result = buyerUserService.getGameDetails(gameName);
-        if (result == null) {
-            logUtil.logWarning("查询游戏详细信息失败 - 游戏不存在或已下架: " + gameName);
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("游戏不存在或已下架");
+        try {
+            // URL解码gameName参数，处理特殊字符
+            String decodedGameName = java.net.URLDecoder.decode(gameName, "UTF-8");
+            logUtil.logDebug("查询游戏详细信息 - 游戏名: " + decodedGameName);
+            
+            GameInfoDTO result = buyerUserService.getGameDetails(decodedGameName);
+            if (result == null) {
+                logUtil.logWarning("查询游戏详细信息失败 - 游戏不存在或已下架: " + decodedGameName);
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body("游戏不存在或已下架");
+            }
+            
+            logUtil.logDebug("查询游戏详细信息成功 - 游戏名: " + decodedGameName);
+            return ResponseEntity.ok(result);
+        } catch (java.io.UnsupportedEncodingException e) {
+            logUtil.logWarning("URL解码失败 - gameName: " + gameName + ", 错误: " + e.getMessage());
+            // 如果解码失败，使用原始参数
+            logUtil.logDebug("查询游戏详细信息 - 游戏名: " + gameName);
+            GameInfoDTO result = buyerUserService.getGameDetails(gameName);
+            if (result == null) {
+                logUtil.logWarning("查询游戏详细信息失败 - 游戏不存在或已下架: " + gameName);
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body("游戏不存在或已下架");
+            }
+            logUtil.logDebug("查询游戏详细信息成功 - 游戏名: " + gameName);
+            return ResponseEntity.ok(result);
         }
-        
-        logUtil.logDebug("查询游戏详细信息成功 - 游戏名: " + gameName);
-        return ResponseEntity.ok(result);
     }
 
     /**
@@ -209,10 +244,20 @@ public class BuyerUserController {
      */
     @GetMapping("/games/reviews")
     public ResponseEntity<List<GameReviewDTO>> getGameReviews(@RequestParam String gameName) {
-        logUtil.logDebug("查询游戏评价 - 游戏名: " + gameName);
-        
-        List<GameReviewDTO> result = buyerUserService.getGameReviews(gameName);
-        return ResponseEntity.ok(result);
+        try {
+            // URL解码gameName参数，处理特殊字符
+            String decodedGameName = java.net.URLDecoder.decode(gameName, "UTF-8");
+            logUtil.logDebug("查询游戏评价 - 游戏名: " + decodedGameName);
+            
+            List<GameReviewDTO> result = buyerUserService.getGameReviews(decodedGameName);
+            return ResponseEntity.ok(result);
+        } catch (java.io.UnsupportedEncodingException e) {
+            logUtil.logWarning("URL解码失败 - gameName: " + gameName + ", 错误: " + e.getMessage());
+            // 如果解码失败，使用原始参数
+            logUtil.logDebug("查询游戏评价 - 游戏名: " + gameName);
+            List<GameReviewDTO> result = buyerUserService.getGameReviews(gameName);
+            return ResponseEntity.ok(result);
+        }
     }
 
     /**
@@ -245,10 +290,20 @@ public class BuyerUserController {
      */
     @GetMapping("/game-library")
     public ResponseEntity<List<GameLibraryResponseDTO>> getBuyerGameLibrary(@RequestParam String buyerNickname) {
-        logUtil.logDebug("查询游戏库 - 买家昵称: " + buyerNickname);
-        
-        List<GameLibraryResponseDTO> result = buyerUserService.getBuyerGameLibrary(buyerNickname);
-        return ResponseEntity.ok(result);
+        try {
+            // URL解码buyerNickname参数，处理特殊字符
+            String decodedBuyerNickname = java.net.URLDecoder.decode(buyerNickname, "UTF-8");
+            logUtil.logDebug("查询游戏库 - 买家昵称: " + decodedBuyerNickname);
+            
+            List<GameLibraryResponseDTO> result = buyerUserService.getBuyerGameLibrary(decodedBuyerNickname);
+            return ResponseEntity.ok(result);
+        } catch (java.io.UnsupportedEncodingException e) {
+            logUtil.logWarning("URL解码失败 - buyerNickname: " + buyerNickname + ", 错误: " + e.getMessage());
+            // 如果解码失败，使用原始参数
+            logUtil.logDebug("查询游戏库 - 买家昵称: " + buyerNickname);
+            List<GameLibraryResponseDTO> result = buyerUserService.getBuyerGameLibrary(buyerNickname);
+            return ResponseEntity.ok(result);
+        }
     }
 
     /**
@@ -257,16 +312,32 @@ public class BuyerUserController {
      */
     @GetMapping("/games/download")
     public ResponseEntity<?> getGameDownloadLink(@RequestParam String buyerNickname, @RequestParam String gameName) {
-        logUtil.logDebug("获取游戏下载链接 - 买家昵称: " + buyerNickname + ", 游戏名: " + gameName);
-        
-        GameDownloadResponseDTO result = buyerUserService.getGameDownloadLink(buyerNickname, gameName);
-        if (result == null) {
-            logUtil.logWarning("获取游戏下载链接失败 - 游戏不在游戏库中: " + gameName);
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("游戏不在您的游戏库中");
+        try {
+            // URL解码参数，处理特殊字符
+            String decodedBuyerNickname = java.net.URLDecoder.decode(buyerNickname, "UTF-8");
+            String decodedGameName = java.net.URLDecoder.decode(gameName, "UTF-8");
+            logUtil.logDebug("获取游戏下载链接 - 买家昵称: " + decodedBuyerNickname + ", 游戏名: " + decodedGameName);
+            
+            GameDownloadResponseDTO result = buyerUserService.getGameDownloadLink(decodedBuyerNickname, decodedGameName);
+            if (result == null) {
+                logUtil.logWarning("获取游戏下载链接失败 - 游戏不在游戏库中: " + decodedGameName);
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body("游戏不在您的游戏库中");
+            }
+            
+            logUtil.logDebug("获取游戏下载链接成功 - 买家昵称: " + decodedBuyerNickname + ", 游戏名: " + decodedGameName);
+            return ResponseEntity.ok(result);
+        } catch (java.io.UnsupportedEncodingException e) {
+            logUtil.logWarning("URL解码失败 - buyerNickname: " + buyerNickname + ", gameName: " + gameName + ", 错误: " + e.getMessage());
+            // 如果解码失败，使用原始参数
+            logUtil.logDebug("获取游戏下载链接 - 买家昵称: " + buyerNickname + ", 游戏名: " + gameName);
+            GameDownloadResponseDTO result = buyerUserService.getGameDownloadLink(buyerNickname, gameName);
+            if (result == null) {
+                logUtil.logWarning("获取游戏下载链接失败 - 游戏不在游戏库中: " + gameName);
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body("游戏不在您的游戏库中");
+            }
+            logUtil.logDebug("获取游戏下载链接成功 - 买家昵称: " + buyerNickname + ", 游戏名: " + gameName);
+            return ResponseEntity.ok(result);
         }
-        
-        logUtil.logDebug("获取游戏下载链接成功 - 买家昵称: " + buyerNickname + ", 游戏名: " + gameName);
-        return ResponseEntity.ok(result);
     }
 
     /**
@@ -293,10 +364,20 @@ public class BuyerUserController {
      */
     @GetMapping("/orders")
     public ResponseEntity<List<OrderResponseDTO>> getBuyerOrders(@RequestParam String buyerNickname) {
-        logUtil.logDebug("查询订单 - 买家昵称: " + buyerNickname);
-        
-        List<OrderResponseDTO> result = buyerUserService.getBuyerOrders(buyerNickname);
-        return ResponseEntity.ok(result);
+        try {
+            // URL解码buyerNickname参数，处理特殊字符
+            String decodedBuyerNickname = java.net.URLDecoder.decode(buyerNickname, "UTF-8");
+            logUtil.logDebug("查询订单 - 买家昵称: " + decodedBuyerNickname);
+            
+            List<OrderResponseDTO> result = buyerUserService.getBuyerOrders(decodedBuyerNickname);
+            return ResponseEntity.ok(result);
+        } catch (java.io.UnsupportedEncodingException e) {
+            logUtil.logWarning("URL解码失败 - buyerNickname: " + buyerNickname + ", 错误: " + e.getMessage());
+            // 如果解码失败，使用原始参数
+            logUtil.logDebug("查询订单 - 买家昵称: " + buyerNickname);
+            List<OrderResponseDTO> result = buyerUserService.getBuyerOrders(buyerNickname);
+            return ResponseEntity.ok(result);
+        }
     }
 
     /**

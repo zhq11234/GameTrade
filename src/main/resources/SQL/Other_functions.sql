@@ -12,6 +12,9 @@ BEGIN
                 game_name AS GameName,
                 category AS Category,
                 price AS Price,
+                Score As score,
+                sales_volume As salesVolume,
+                company_name As companyName,
                 description AS Description
             FROM game_info
             WHERE status = '上架'
@@ -24,6 +27,9 @@ BEGIN
                 game_name AS GameName,
                 category AS Category,
                 price AS Price,
+                Score As score,
+                sales_volume As salesVolume,
+                company_name As companyName,
                 description AS Description
             FROM game_info
             WHERE game_name LIKE '%' + @GameName + '%'
@@ -32,27 +38,47 @@ BEGIN
         END
 END
 GO
+
+-- drop procedure sp_SearchGameByName
 --14按游戏分类查询游戏
 CREATE PROCEDURE sp_SearchGameByCategory
-    @Category NVARCHAR(50)
+@Category  VARCHAR(50) = '全部'
 AS
 BEGIN
     SET NOCOUNT ON;
 
-    -- 查询游戏信息，只返回上架游戏的游戏名、分类、价格三列
-SELECT
-    game_name AS GameName,
-    category AS Category,
-    price AS Price
-FROM game_info
-WHERE category LIKE '%' + @Category + '%'
-  AND status = '上架'  -- 只显示上架游戏
-ORDER BY category, game_name;
-
-END
-GO
+   IF @Category='全部'
+       BEGIN
+           SELECT
+                game_name AS GameName,
+                category AS Category,
+                price AS Price,
+                Score As score,
+                sales_volume As salesVolume,
+                company_name As companyName,
+                description AS Description
+            FROM game_info
+            WHERE  status = '上架'  -- 只显示上架游戏
+            ORDER BY game_name;
+       end
+   ELSE
+       BEGIN
+           SELECT
+                game_name AS GameName,
+                category AS Category,
+                price AS Price,
+                Score As score,
+                sales_volume As salesVolume,
+                company_name As companyName,
+                description AS Description
+            FROM game_info
+            WHERE  status = '上架'  and Category LIKE '%' + @Category + '%'
+            ORDER BY game_name;
+       end
+end
 
 -- EXEC sp_SearchGameByCategory '角色扮演'
+
 
 --15按游戏热度查询游戏
 CREATE PROCEDURE sp_SearchGameByPopularity
@@ -65,15 +91,19 @@ BEGIN
 SELECT
     game_name AS GameName,
     category AS Category,
-    price AS Price
+    price AS Price,
+    Score As score,
+    sales_volume As salesVolume,
+    company_name As companyName,
+    description AS Description
 FROM game_info
 WHERE
-  -- 热度计算：销量 * COALESCE(评分, 2.5) 如果评分为空，使用默认值2.5
-    (sales_volume * COALESCE(score, 5.0)) >= @MinPopularity
+
+    (sales_volume * score) >= @MinPopularity
   AND status = '上架'  -- 只显示上架游戏
 ORDER BY
     -- 按热度降序排列（销量 * 评分）
-    (sales_volume * COALESCE(score, 5.0)) DESC,
+    (sales_volume * score) DESC,
     game_name;
 
 END
@@ -84,90 +114,40 @@ GO
 
 --16按买家偏好查询游戏
 CREATE PROCEDURE sp_SearchGameByBuyerPreference
-    @BuyerNickname VARCHAR(50)
+@BuyerNickname VARCHAR(50)
 AS
 BEGIN
     SET NOCOUNT ON;
 
-    -- 创建临时表存储类别统计
-CREATE TABLE #CategoryStats (
-                                category VARCHAR(50),
-                                source_type VARCHAR(20),  -- 'library' 或 'browse'
-                                count_value INT
-);
+    -- 找出浏览历史中最偏好的类别（浏览次数最多的类别）
+    DECLARE @PreferredCategory VARCHAR(50);
 
--- 统计买家游戏库中的类别分布
-INSERT INTO #CategoryStats (category, source_type, count_value)
-SELECT
-    gi.category,
-    'library' AS source_type,
-    COUNT(*) AS game_count
-FROM buyer_game_info bgi
-         INNER JOIN game_info gi ON bgi.game_name = gi.game_name
-WHERE bgi.nickname = @BuyerNickname
-GROUP BY gi.category;
+    SELECT TOP 1 @PreferredCategory = gi.category
+    FROM browse_history bh
+             INNER JOIN game_info gi ON bh.game_name = gi.game_name
+    WHERE bh.nickname = @BuyerNickname
+    GROUP BY gi.category
+    ORDER BY SUM(bh.browse_count) DESC;  -- 按浏览总次数排序
 
--- 统计买家浏览历史中的类别分布（考虑浏览次数）
-INSERT INTO #CategoryStats (category, source_type, count_value)
-SELECT
-    gi.category,
-    'browse' AS source_type,
-    SUM(bh.browse_count) AS total_browse_count  -- 考虑浏览次数权重
-FROM browse_history bh
-         INNER JOIN game_info gi ON bh.game_name = gi.game_name
-WHERE bh.nickname = @BuyerNickname
-GROUP BY gi.category;
-
--- 找出游戏库中最偏好的类别
-DECLARE @LibraryPreference NVARCHAR(50);
-SELECT TOP 1 @LibraryPreference = category
-FROM #CategoryStats
-WHERE source_type = 'library'
-ORDER BY count_value DESC;
-
--- 找出浏览历史中最偏好的类别
-DECLARE @BrowsePreference NVARCHAR(50);
-SELECT TOP 1 @BrowsePreference = category
-FROM #CategoryStats
-WHERE source_type = 'browse'
-ORDER BY count_value DESC;
-
--- 确定最终偏好类别（优先使用游戏库偏好，如果没有则使用浏览历史偏好）
-DECLARE @FinalPreference NVARCHAR(50);
-    IF @LibraryPreference IS NOT NULL
-        SET @FinalPreference = @LibraryPreference;
-ELSE IF @BrowsePreference IS NOT NULL
-        SET @FinalPreference = @BrowsePreference;
-ELSE
-BEGIN
-            -- 如果没有任何偏好数据，返回空结果
-SELECT '暂无偏好数据，无法推荐游戏' AS Message;
-RETURN;
-END
-
-    -- 查询偏好类别下的上架游戏，按热度排序（销量×评分）
-SELECT
-    gi.game_name AS GameName,
-    gi.category AS Category,
-    gi.price AS Price,
-    gi.score AS Score,
-    gi.sales_volume AS SalesVolume,
-    gi.company_name AS CompanyName,
-    -- 计算热度（销量×评分，评分为空时使用默认值5.0）
-    IIF(gi.score IS NOT NULL, gi.sales_volume * CAST(gi.score AS DECIMAL(4, 2)), gi.sales_volume * 5.0) AS Popularity
-FROM game_info gi
-WHERE gi.category = @FinalPreference
-  AND gi.status = '上架'  -- 只查询上架的游戏
-ORDER BY IIF(gi.score IS NOT NULL, gi.sales_volume * CAST(gi.score AS DECIMAL(4, 2)), gi.sales_volume * 5.0) DESC;
-
--- 返回偏好分析结果（可选）
-SELECT
-    @FinalPreference AS PreferredCategory,
-    @LibraryPreference AS LibraryPreference,
-    @BrowsePreference AS BrowsePreference;
-
--- 清理临时表
-DROP TABLE #CategoryStats;
+    -- 如果没有浏览历史数据，返回提示信息
+--     IF @PreferredCategory IS NULL
+--         BEGIN
+--             SELECT '暂无浏览历史数据，无法确定偏好类别' AS Message;
+--             RETURN;
+--         END
+    -- 查询偏好类别下的游戏，只返回游戏名、类别、价格
+    SELECT
+        gi.game_name AS GameName,
+        gi.category AS Category,
+        gi.price AS Price,
+        gi.score AS score,
+        gi.sales_volume AS salesVolume,
+        gi.company_name AS companyname,
+        gi.description AS description
+    FROM game_info gi
+    WHERE gi.category = @PreferredCategory
+      AND gi.status = '上架'  -- 只查询上架的游戏
+    ORDER BY gi.game_name;  -- 按游戏名排序
 
 END
 GO
@@ -177,7 +157,7 @@ GO
 
 --17游戏详细信息查询
 CREATE PROCEDURE sp_GetGameDetails
-    @GameName NVARCHAR(100)
+    @GameName VARCHAR(100)
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -233,7 +213,7 @@ GO
 
 --18游戏评价查询
 CREATE PROCEDURE sp_GetGameReviews
-    @GameName NVARCHAR(100)
+    @GameName VARCHAR(100)
 AS
 BEGIN
     SET NOCOUNT ON;

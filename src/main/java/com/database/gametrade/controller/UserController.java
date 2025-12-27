@@ -77,8 +77,16 @@ public class UserController {
      */
     @GetMapping("/check-account")
     public ResponseEntity<Boolean> checkAccountExists(@RequestParam String account) {
-        boolean exists = userService.checkAccountExists(account);
-        return ResponseEntity.ok(exists);
+        try {
+            // URL解码account参数，处理特殊字符
+            String decodedAccount = java.net.URLDecoder.decode(account, "UTF-8");
+            boolean exists = userService.checkAccountExists(decodedAccount);
+            return ResponseEntity.ok(exists);
+        } catch (java.io.UnsupportedEncodingException e) {
+            // 如果解码失败，使用原始参数
+            boolean exists = userService.checkAccountExists(account);
+            return ResponseEntity.ok(exists);
+        }
     }
 
     /**
@@ -87,7 +95,15 @@ public class UserController {
      */
     @GetMapping("/check-contact")
     public ResponseEntity<Boolean> checkContactExists(@RequestParam String contact) {
-        boolean exists = userService.checkContactExists(contact);
-        return ResponseEntity.ok(exists);
+        try {
+            // URL解码contact参数，处理特殊字符
+            String decodedContact = java.net.URLDecoder.decode(contact, "UTF-8");
+            boolean exists = userService.checkContactExists(decodedContact);
+            return ResponseEntity.ok(exists);
+        } catch (java.io.UnsupportedEncodingException e) {
+            // 如果解码失败，使用原始参数
+            boolean exists = userService.checkContactExists(contact);
+            return ResponseEntity.ok(exists);
+        }
     }
 }

@@ -194,7 +194,8 @@ public class BuyerUserService {
                 rs.getBigDecimal("Price"),
                 rs.getBigDecimal("Score"),
                 rs.getInt("SalesVolume"),
-                rs.getString("CompanyName")
+                rs.getString("CompanyName"),
+                rs.getString("Description")
             );
         }
     }
