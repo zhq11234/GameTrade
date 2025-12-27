@@ -2,6 +2,7 @@ package com.database.gametrade.dto;
 
 import lombok.Getter;
 import lombok.Setter;
+import org.springframework.data.domain.Score;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -15,23 +16,25 @@ public class GameInfoDTO {
     private String companyName;
     private LocalDateTime releaseTime;
     private String description;
-    private String status;
     private String downloadLink;
     private String licenseNumber;
+    private String score;
+    private int salesVolume;
 
     public GameInfoDTO() {}
 
-    public GameInfoDTO(String gameName, String category, BigDecimal price, String companyName, 
-                      LocalDateTime releaseTime, String description, String status, 
-                      String downloadLink, String licenseNumber) {
+    public GameInfoDTO(String gameName, String category, BigDecimal price,
+                       String companyName, LocalDateTime localDateTime,
+                       String description, String licenseNumber,
+                       String score, String salesVolume) {
         this.gameName = gameName;
         this.category = category;
         this.price = price;
         this.companyName = companyName;
-        this.releaseTime = releaseTime;
+        this.releaseTime = localDateTime;
         this.description = description;
-        this.status = status;
-        this.downloadLink = downloadLink;
         this.licenseNumber = licenseNumber;
+        this.score = score;
+        this.salesVolume = Integer.parseInt(salesVolume);
     }
 }

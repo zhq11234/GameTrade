@@ -309,14 +309,17 @@ public class VendorUserService {
                     // 企业名
                     dto.setReleaseTime(row[4] != null ? java.time.LocalDateTime.parse(row[4].toString()) : null);
                     // 上线时间
+                    //简介
                     dto.setDescription(row[5] != null ? row[5].toString() : null);
-                    // 游戏简介
-                    dto.setStatus(row[6] != null ? row[6].toString() : null);
-                    // 状态
-                    dto.setDownloadLink(row[7] != null ? row[7].toString() : null);
-                    // 下载链接
-                    dto.setLicenseNumber(row[8] != null ? row[8].toString() : null);
                     // 版号
+                    dto.setLicenseNumber(row[6] != null ? row[6].toString() : null);
+                    //评分
+                    dto.setScore(row[7] != null ? row[7].toString() : null);
+                    //销量
+                    dto.setSalesVolume(row[8] != null? Integer.parseInt(row[8].toString()) :null);
+
+
+
                     dtoList.add(dto);
                 }
             }

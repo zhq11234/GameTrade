@@ -135,14 +135,14 @@ public class BuyerUserService {
      * 生成订单
      */
     @Transactional
-    public OrderResponseDTO createOrder(String buyerNickname, String gameName) {
+    public boolean createOrder(String buyerNickname, String gameName) {
         String sql = "EXEC sp_CreateOrder ?, ?";
         try {
-            List<OrderResponseDTO> results = jdbcTemplate.query(sql, new OrderResponseRowMapper(), buyerNickname, gameName);
-            return results.isEmpty() ? null : results.get(0);
+            jdbcTemplate.update(sql, buyerNickname, gameName);
+            return true;
         } catch (Exception e) {
             logUtil.logWarning("生成订单失败: " + e.getMessage());
-            return null;
+            return false;
         }
     }
 
@@ -204,15 +204,15 @@ public class BuyerUserService {
         @Override
         public GameInfoDTO mapRow(ResultSet rs, int rowNum) throws SQLException {
             return new GameInfoDTO(
-                rs.getString("GameName"),
-                rs.getString("Category"),
-                rs.getBigDecimal("Price"),
-                rs.getString("CompanyName"),
-                rs.getTimestamp("ReleaseTime") != null ? rs.getTimestamp("ReleaseTime").toLocalDateTime() : null,
-                rs.getString("Description"),
-                rs.getString("Status"),
-                rs.getString("DownloadLink"),
-                rs.getString("LicenseNumber")
+                rs.getString("gameName"),
+                rs.getString("category"),
+                rs.getBigDecimal("price"),
+                rs.getString("companyName"),
+                rs.getTimestamp("releaseTime") != null ? rs.getTimestamp("ReleaseTime").toLocalDateTime() : null,
+                rs.getString("description"),
+                rs.getString("licenseNumber"),
+                    rs.getString("score"),
+                    rs.getString("salesVolume")
             );
         }
     }
@@ -234,7 +234,10 @@ public class BuyerUserService {
         public GameLibraryResponseDTO mapRow(ResultSet rs, int rowNum) throws SQLException {
             return new GameLibraryResponseDTO(
                 rs.getString("GameName"),
-                rs.getString("LicenseNumber")
+                rs.getString("LicenseNumber"),
+                    rs.getString("Score"),
+                    rs.getString("Comment"),
+                    rs.getString("ReviewTime")
             );
         }
     }
@@ -251,7 +254,7 @@ public class BuyerUserService {
         }
     }
 
-    private static class OrderResponseRowMapper implements RowMapper<OrderResponseDTO> {
+    private static class   OrderResponseRowMapper implements RowMapper<OrderResponseDTO> {
         @Override
         public OrderResponseDTO mapRow(ResultSet rs, int rowNum) throws SQLException {
             return new OrderResponseDTO(

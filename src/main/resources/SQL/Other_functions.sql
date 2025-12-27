@@ -186,12 +186,10 @@ SELECT
     company_name AS CompanyName,
     release_time AS ReleaseTime,
     description AS Description,
-    status AS Status,
-    download_link AS DownloadLink,
     license_number AS LicenseNumber,
     score AS Score,
     sales_volume AS SalesVolume,
-    visitor_count AS VisitorCount
+    download_link AS DownloadLink
 FROM game_info
 WHERE game_name = @GameName AND status = '上架';
 
@@ -208,9 +206,7 @@ END CATCH
 
 END
 GO
-
 -- EXEC sp_GetGameDetails '游戏名'
-
 --18游戏评价查询
 CREATE PROCEDURE sp_GetGameReviews
     @GameName VARCHAR(100)
@@ -273,13 +269,13 @@ BEGIN
 END
 
         -- 检查评分范围（0.0-10.0）
-        IF @Score < 0.0 OR @Score > 10.0
+        IF @Score < 0.0 OR  @Score > 10.0
 BEGIN
                 RAISERROR('评分必须在0.0到10.0之间', 16, 1);
                 RETURN;
 END
 
-        -- 检查是否已经购买并拥有该游戏（buyer_game_info表中应该有记录）
+        -- 检查是否已经购买并拥有该游戏
         IF NOT EXISTS (SELECT 1 FROM buyer_game_info WHERE nickname = @BuyerNickname AND game_name = @GameName)
 BEGIN
                 RAISERROR('您尚未购买该游戏，无法进行评价: %s', 16, 1, @GameName);
@@ -322,20 +318,23 @@ GO
 -- EXEC sp_SubmitGameReview '买家昵称', '游戏名', 8.5, '很好的游戏'
 
 --20游戏库查询
+--20游戏库查询
 CREATE PROCEDURE sp_GetBuyerGameLibrary
-    @BuyerNickname NVARCHAR(50)
+@BuyerNickname NVARCHAR(50)
 AS
 BEGIN
     SET NOCOUNT ON;
 
     -- 直接从买家游戏表查询游戏库信息
-SELECT
-    bgi.game_name AS GameName,
-    bgi.license_number AS LicenseNumber
-FROM buyer_game_info bgi
-WHERE bgi.nickname = @BuyerNickname
-ORDER BY bgi.game_name;
-
+    SELECT
+        bgi.game_name AS GameName,
+        bgi.license_number AS LicenseNumber,
+        bgi.score AS Score,
+        bgi.comment AS Comment,
+        bgi.review_time AS ReviewTime
+    FROM buyer_game_info bgi
+    WHERE bgi.nickname = @BuyerNickname
+    ORDER BY bgi.game_name;
 END
 GO
 -- EXEC sp_GetBuyerGameLibrary '买家昵称'
@@ -374,58 +373,104 @@ GO
 
 -- EXEC sp_GetGameDownloadLink '买家昵称', '游戏名'
 --22游戏更新
-CREATE TABLE game_update_reminders (
-                                       reminder_id INT IDENTITY(1,1) PRIMARY KEY,
-                                       buyer_nickname NVARCHAR(50) NOT NULL,
-                                       game_name NVARCHAR(100) NOT NULL,
-                                       old_version NVARCHAR(50),
-                                       new_version NVARCHAR(50) NOT NULL,
-                                       reminder_time DATETIME2 DEFAULT GETDATE(),
-                                       reminder_message NVARCHAR(500),
-                                       is_read BIT DEFAULT 0,  -- 是否已读
-                                       read_time DATETIME2      -- 阅读时间
-);
-
--- 创建触发器
-CREATE TRIGGER tr_GameUpdateReminder
+CREATE TRIGGER tr_GameUpdateNotification
     ON game_info
     AFTER UPDATE
-              AS
+    AS
 BEGIN
     SET NOCOUNT ON;
 
-    -- 只处理license_number字段的更新
     IF UPDATE(license_number)
-BEGIN
-            -- 遍历所有更新的游戏记录
-INSERT INTO game_update_reminders (
-    buyer_nickname,
-    game_name,
-    old_version,
-    new_version,
-    reminder_message
-)
-SELECT DISTINCT
-    bgi.nickname,
-    i.game_name,
-    d.license_number AS old_version,
-    i.license_number AS new_version,
-    '亲爱的 ' + bgi.nickname + '，您拥有的游戏 "' + i.game_name +
-    '" 有新版本发布！当前版本: ' + d.license_number +
-    ' → 新版本: ' + i.license_number +
-    '。请及时更新以获得更好的游戏体验。' AS reminder_message
-FROM inserted i
-         INNER JOIN deleted d ON i.game_name = d.game_name
-         INNER JOIN buyer_game_info bgi ON i.game_name = bgi.game_name
--- 只有当新版号比旧版号"更高"时才发送提醒
-WHERE i.license_number > d.license_number
-
--- 可选：记录到系统日志
-PRINT '检测到游戏版号更新，已为相关买家创建更新提醒';
-END
+        BEGIN
+            -- 检查游戏版号是否与买家游戏表中的版号不一致
+            IF EXISTS (
+                SELECT 1
+                FROM inserted i
+                         INNER JOIN deleted d ON i.game_name = d.game_name
+                         INNER JOIN buyer_game_info bgi ON i.game_name = bgi.game_name
+                WHERE i.license_number != bgi.license_number  -- 版号不一致
+            )
+                BEGIN
+                    -- 记录更新提醒
+                    PRINT '检测到游戏版号更新，相关买家可以进行游戏更新';
+                END
+        END
 END
 GO
 
+--买家更新游戏版本
+CREATE PROCEDURE sp_UpdateBuyerGameVersion
+    @BuyerNickname VARCHAR(50),
+    @GameName VARCHAR(100)
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SET XACT_ABORT ON;  -- 发生错误时自动回滚事务
+
+    BEGIN TRANSACTION;
+
+    BEGIN TRY
+        -- 检查买家是否拥有该游戏
+        IF NOT EXISTS (
+            SELECT 1
+            FROM buyer_game_info
+            WHERE nickname = @BuyerNickname AND game_name = @GameName
+        )
+            BEGIN
+                RAISERROR('您尚未购买该游戏: %s', 16, 1, @GameName);
+                RETURN;
+            END
+
+        -- 检查游戏是否存在
+        IF NOT EXISTS (SELECT 1 FROM game_info WHERE game_name = @GameName)
+            BEGIN
+                RAISERROR('游戏不存在: %s', 16, 1, @GameName);
+                RETURN;
+            END
+
+        -- 检查版号是否已经是最新
+        DECLARE @CurrentVersion VARCHAR(50);
+        DECLARE @LatestVersion VARCHAR(50);
+
+        SELECT @CurrentVersion = license_number
+        FROM buyer_game_info
+        WHERE nickname = @BuyerNickname AND game_name = @GameName;
+
+        SELECT @LatestVersion = license_number
+        FROM game_info
+        WHERE game_name = @GameName;
+
+        IF @CurrentVersion = @LatestVersion
+            BEGIN
+                RAISERROR('游戏已经是最新版本: %s', 16, 1, @GameName);
+                RETURN;
+            END
+
+        -- 更新买家游戏版号
+        UPDATE buyer_game_info
+        SET license_number = @LatestVersion
+        WHERE nickname = @BuyerNickname AND game_name = @GameName;
+
+        -- 返回成功消息
+        SELECT
+            '游戏更新成功' AS Result,
+            @GameName AS GameName,
+            @CurrentVersion AS OldVersion,
+            @LatestVersion AS NewVersion;
+
+        COMMIT TRANSACTION;
+    END TRY
+    BEGIN CATCH
+        ROLLBACK TRANSACTION;
+
+        -- 返回错误信息
+        SELECT
+            ERROR_NUMBER() AS ErrorNumber,
+            ERROR_MESSAGE() AS ErrorMessage;
+    END CATCH
+
+END
+GO
 --23生成订单
 CREATE PROCEDURE sp_CreateOrder
     @BuyerNickname NVARCHAR(50),
@@ -594,10 +639,6 @@ SET
     order_status = '已支付',
     payment_time = GETDATE()
 WHERE order_id = @OrderId;
-
--- 返回支付成功信息
-SELECT '订单支付成功' AS Result;
-
 COMMIT TRANSACTION;
 END TRY
 BEGIN CATCH
@@ -611,7 +652,6 @@ END CATCH
 
 END
 GO
-
 -- EXEC sp_PayOrder 'ORD20241225000001'
 -- 订单支付触发器
 -- 触发器名: tr_OrderPayment
@@ -620,53 +660,60 @@ GO
 CREATE TRIGGER tr_OrderPayment
     ON order_info
     AFTER UPDATE
-              AS
+    AS
 BEGIN
     SET NOCOUNT ON;
-    -- 只处理order_status字段的更新，且状态变为'已支付'
     IF UPDATE(order_status)
-BEGIN
+        BEGIN
             -- 遍历所有更新的订单记录
-INSERT INTO buyer_game_info (
-    nickname,
-    game_name,
-    license_number,
-    score,
-    comment,
-    review_time
-)
-SELECT
-    i.nickname,
-    i.game_name,
-    NULL,
-    NULL,  -- 评分初始为空
-    NULL,  -- 评论初始为空
-    NULL   -- 评价时间初始为空
-FROM inserted i
-         INNER JOIN deleted d ON i.order_id = d.order_id
--- 只有当订单状态从非'已支付'变为'已支付'时才处理
-WHERE i.order_status = '已支付'
-  AND d.order_status != '已支付'
-              -- 检查是否已经存在于买家游戏库中（避免重复插入）
+            INSERT INTO buyer_game_info (
+                nickname,
+                game_name,
+                license_number,
+                score,
+                comment,
+                review_time
+            )
+            SELECT DISTINCT
+                i.nickname,
+                i.game_name,
+                gi.license_number,  -- 从子查询获取版号
+                5.0,
+                NULL,
+                NULL
+            FROM inserted i,
+                 (SELECT game_name, license_number FROM game_info) gi
+            WHERE i.game_name = gi.game_name
+              AND i.order_status = '已支付'
+              AND EXISTS (
+                SELECT 1
+                FROM deleted d
+                WHERE d.order_id = i.order_id
+                  AND d.order_status != '已支付'
+            )
               AND NOT EXISTS (
                 SELECT 1
                 FROM buyer_game_info bgi
-                WHERE bgi.nickname = i.nickname AND bgi.game_name = i.game_name
+                WHERE bgi.nickname = i.nickname
+                  AND bgi.game_name = i.game_name
             );
 
--- 更新游戏销量（加一），只更新上架游戏的销量
-UPDATE gi
-SET sales_volume = sales_volume + 1
-    FROM game_info gi
-                     INNER JOIN inserted i ON gi.game_name = i.game_name
-    INNER JOIN deleted d ON i.order_id = d.order_id
-WHERE i.order_status = '已支付'
-  AND d.order_status != '已支付'
-  AND gi.status = '上架';
-
--- 可选：记录支付成功日志
-PRINT '订单支付成功，已更新游戏销量并添加到买家游戏库';
-END
+            -- 更新游戏销量（加一）
+            UPDATE game_info
+            SET sales_volume = sales_volume + 1
+            WHERE game_name IN (
+                SELECT i.game_name
+                FROM inserted i
+                WHERE i.order_status = '已支付'
+                  AND EXISTS (
+                    SELECT 1
+                    FROM deleted d
+                    WHERE d.order_id = i.order_id
+                      AND d.order_status != '已支付'
+                )
+            );
+            PRINT '订单支付成功，已更新游戏销量并添加到买家游戏库';
+        END
 END
 GO
 

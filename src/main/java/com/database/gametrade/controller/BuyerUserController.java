@@ -348,14 +348,14 @@ public class BuyerUserController {
     public ResponseEntity<?> createOrder(@Valid @RequestBody OrderRequestDTO orderRequest) {
         logUtil.logDebug("生成订单 - 买家昵称: " + orderRequest.getBuyerNickname() + ", 游戏名: " + orderRequest.getGameName());
         
-        OrderResponseDTO result = buyerUserService.createOrder(orderRequest.getBuyerNickname(), orderRequest.getGameName());
-        if (result == null) {
+        boolean success = buyerUserService.createOrder(orderRequest.getBuyerNickname(), orderRequest.getGameName());
+        if (success) {
+            logUtil.logDebug("生成订单成功 - 买家昵称: " + orderRequest.getBuyerNickname() + ", 游戏名: " + orderRequest.getGameName());
+            return ResponseEntity.ok().body("订单生成成功");
+        } else {
             logUtil.logWarning("生成订单失败 - 买家昵称: " + orderRequest.getBuyerNickname() + ", 游戏名: " + orderRequest.getGameName());
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("生成订单失败");
         }
-        
-        logUtil.logDebug("生成订单成功 - 订单ID: " + result.getOrderId());
-        return ResponseEntity.ok(result);
     }
 
     /**
