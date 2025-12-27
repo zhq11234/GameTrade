@@ -141,7 +141,8 @@ BEGIN
             -- 更新现有游戏状态和上线时间
 UPDATE game_info
 SET status = '上架',
-    release_time = GETDATE()
+    release_time = GETDATE(),
+    score = 5.0
 WHERE game_name = @game_name AND company_name = @company_name;
 END
         

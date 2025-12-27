@@ -1,25 +1,37 @@
 --13按游戏名称查询游戏
 CREATE PROCEDURE sp_SearchGameByName
-    @GameName VARCHAR(100)
+@GameName VARCHAR(100) = NULL  -- 设置默认值为NULL
 AS
 BEGIN
-    SET NOCOUNT ON;  --禁止返回受影响的行数信息，
+    SET NOCOUNT ON;  -- 禁止返回受影响的行数信息
 
-    -- 查询游戏信息，只返回上架游戏的游戏名、分类、价格三列
-SELECT
-    game_name AS GameName,
-    category AS Category,
-    price AS Price
-FROM game_info
-WHERE game_name LIKE '%' + @GameName + '%'
-  AND status = '上架'  -- 只显示上架游戏
-ORDER BY game_name;
-
+    IF @GameName IS NULL OR @GameName = ''
+        BEGIN
+            -- 当不传游戏名或游戏名为空时，查询所有上架游戏
+            SELECT
+                game_name AS GameName,
+                category AS Category,
+                price AS Price,
+                description AS Description
+            FROM game_info
+            WHERE status = '上架'
+            ORDER BY game_name;
+        END
+    ELSE
+        BEGIN
+            -- 当传入游戏名时，模糊查询匹配的游戏
+            SELECT
+                game_name AS GameName,
+                category AS Category,
+                price AS Price,
+                description AS Description
+            FROM game_info
+            WHERE game_name LIKE '%' + @GameName + '%'
+              AND status = '上架'  -- 注意：这里使用的是中文单引号
+            ORDER BY game_name;
+        END
 END
 GO
-
---EXEC sp_SearchGameByName ‘王者荣耀’
-
 --14按游戏分类查询游戏
 CREATE PROCEDURE sp_SearchGameByCategory
     @Category NVARCHAR(50)
